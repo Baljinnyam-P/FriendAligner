@@ -1,0 +1,15 @@
+# Ignore Python cache directories
+__pycache__/
+**/__pycache__/
+.venv/
+.env
+__pycache__/
+ *.pyc
+
+ app/__pycache__/
+ app/*.pyc
+
+ FriendAligner_fixed.sql
+
+ tests/
+ pytest.ini

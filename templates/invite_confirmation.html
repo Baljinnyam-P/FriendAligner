@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invite Confirmation - FriendAligner</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+      .navbar { background: #c2dfe3; }
+      .confirmation-box { max-width: 400px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
+      .confirmation-box h2 { margin-bottom: 1.5rem; }
+      .confirmation-list { text-align: left; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
+    <div class="confirmation-box">
+        <h2>Invite Sent!</h2>
+        <p>Your invite has been sent to the following users:</p>
+        <div class="confirmation-list">
+            <ul id="inviteList">
+                <!-- Populated by JS -->
+            </ul>
+        </div>
+        <a href="/main_menu" class="btn">Back to Main Menu</a>
+            <script>
+                async function loadInvites() {
+                    const token = localStorage.getItem('jwt_token');
+                    const group_id = localStorage.getItem('group_id');
+                    if (!token || !group_id) return;
+                    try {
+                        const res = await fetch(`/api/group/${group_id}/members`, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        if (!res.ok) return;
+                        const members = await res.json();
+                        // For each member, get invite status (if any)
+                        const list = document.getElementById('inviteList');
+                        list.innerHTML = '';
+                        for (const m of members) {
+                            let status = 'Accepted';
+                            // Lookup invite for this user
+                            let inviteStatus = '';
+                            let inviteDate = '';
+                            try {
+                                const res2 = await fetch(`/api/invite/pending`, {
+                                    headers: { 'Authorization': 'Bearer ' + token }
+                                });
+                                if (res2.ok) {
+                                    const invites = await res2.json();
+                                    const found = invites.find(i => i.group_id == group_id && i.invited_user_id == m.user_id);
+                                    if (found) {
+                                        inviteStatus = found.status.charAt(0).toUpperCase() + found.status.slice(1);
+                                        inviteDate = found.date ? ` (${found.date})` : '';
+                                    }
+                                }
+                            } catch {}
+                            if (!inviteStatus) inviteStatus = status;
+                            const li = document.createElement('li');
+                            li.textContent = `${m.email || 'Unknown'} - ${inviteStatus}${inviteDate}`;
+                            list.appendChild(li);
+                        }
+                    } catch (err) {
+                        // fallback: static
+                    }
+                }
+                loadInvites();
+            </script>
+    </div>
+</body>
+</html>

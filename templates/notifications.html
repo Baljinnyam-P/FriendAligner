@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Notifications - FriendAligner</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+      .navbar { background: #c2dfe3; }
+      .notif-box { max-width: 500px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+      .notif-list { list-style: none; padding: 0; }
+      .notif-list li { margin-bottom: 1rem; background: #f7f7f7; padding: 1rem; border-radius: 6px; }
+      .notif-actions { margin-top: 0.5rem; }
+      .btn { margin-right: 0.5rem; }
+    </style>
+</head>
+<body>
+    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
+    <div class="notif-box">
+        <h2>Notifications</h2>
+        <ul id="notifList" class="notif-list"></ul>
+    </div>
+    <script>
+      async function loadNotifications() {
+        const token = localStorage.getItem('jwt_token');
+        if (!token) return;
+          const res = await fetch('/api/notification', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) return;
+        const notifications = await res.json();
+        const list = document.getElementById('notifList');
+        list.innerHTML = '';
+        for (const n of notifications) {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>${n.message}</strong><br><span style='color:#888;'>${n.type}</span>`;
+          if (n.type === 'invite' && n.invite_id && n.status === 'pending') {
+            const actions = document.createElement('div');
+            actions.className = 'notif-actions';
+            actions.innerHTML = `
+              <button class='btn' onclick='respondInvite(${n.invite_id}, "accepted")'>Accept</button>
+              <button class='btn' onclick='respondInvite(${n.invite_id}, "declined")'>Decline</button>
+            `;
+            li.appendChild(actions);
+          }
+          list.appendChild(li);
+        }
+      }
+      async function respondInvite(invite_id, response) {
+        const token = localStorage.getItem('jwt_token');
+        if (!token) return;
+        const res = await fetch('/api/invite/respond', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ invite_id, response })
+        });
+        if (res.ok) {
+          alert('Response recorded.');
+          loadNotifications();
+        } else {
+          alert('Error responding to invite.');
+        }
+      }
+      loadNotifications();
+    </script>
+</body>
+</html>

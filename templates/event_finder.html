@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Find Events - FriendAligner</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <span class="navbar-brand">FriendAligner</span>
+  </nav>
+  <div class="finder-form">
+    <h2>Find Events Nearby</h2>
+    <form action="{{ url_for('events.find_event') }}" method="get">
+      <input name="zip" placeholder="Zip code" required>
+      <input name="keyword" placeholder="Activity keyword" required>
+      <button type="submit" class="btn">Confirm Choices</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Group - FriendAligner</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
+    <div class="container">
+        <h2>Create Group</h2>
+        <form id="groupCreateForm">
+            <label for="group_name">Group Name:</label>
+            <input type="text" name="group_name" id="group_name" required>
+            <button type="submit" class="btn">Create Group</button>
+        </form>
+    </div>
+    <script>
+      document.getElementById('groupCreateForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const group_name = document.getElementById('group_name').value;
+        const token = localStorage.getItem('jwt_token');
+        if (!token) {
+          alert('You must be logged in.');
+          window.location.href = '/login';
+          return;
+        }
+        const res = await fetch('/api/group/group/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ group_name })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('group_id', data.group_id);
+          alert('Group created!');
+          window.location.href = '/main_menu';
+        } else {
+          const err = await res.json();
+          alert('Error: ' + (err.error || 'Failed to create group'));
+        }
+      };
+    </script>
+</body>
+</html>

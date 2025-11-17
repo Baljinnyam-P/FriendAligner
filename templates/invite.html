@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invite Friends - FriendAligner</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+      .navbar { background: #c2dfe3; }
+      .invite-form { max-width: 400px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
+      .invite-form h2 { margin-bottom: 1.5rem; }
+      .invite-form input, .invite-form button { width: 100%; margin: 0.5rem 0; }
+    </style>
+</head>
+<body>
+    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
+    <div class="invite-form">
+        <h2>Invite Friends</h2>
+        <form id="inviteForm">
+            <input type="email" name="email" placeholder="Friend's Email" required>
+            <button type="submit" class="btn">Send Invite & Choose Date</button>
+        </form>
+    </div>
+    <script>
+      document.getElementById('inviteForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const email = e.target.email.value;
+        localStorage.setItem('invite_email', email);
+        window.location.href = '/date_selection';
+      };
+    </script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Availability - FriendAligner</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
+    <div class="availability-form">
+        <h2>Edit My Availability</h2>
+        <form id="availabilityForm">
+            <label for="date">Select Date:</label>
+            <input type="date" name="date" id="date" required>
+            <label for="status">Availability:</label>
+            <select name="status" id="status" required>
+              <option value="available">Available</option>
+              <option value="busy">Busy</option>
+              <option value="pending">Pending</option>
+            </select>
+            <button type="submit" class="btn">Save</button>
+        </form>
+    </div>
+    <script>
+      // Pre-fill date if coming from calendar view
+      window.onload = function() {
+        const editDate = localStorage.getItem('edit_availability_date');
+        if (editDate) {
+          document.getElementById('date').value = editDate;
+          localStorage.removeItem('edit_availability_date');
+        }
+      };
+      document.getElementById('availabilityForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const date = document.getElementById('date').value;
+        const status = document.getElementById('status').value;
+        const token = localStorage.getItem('jwt_token');
+        const calendar_id = localStorage.getItem('calendar_id');
+        if (!token || !calendar_id) {
+          alert('Missing login or calendar.');
+          window.location.href = '/login';
+          return;
+        }
+        const res = await fetch(`/api/calendar/${calendar_id}/availability`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ date, status })
+        });
+        if (res.ok) {
+          window.location.href = '/calendar_view';
+        } else {
+          const err = await res.json();
+          alert('Error: ' + (err.error || 'Failed to update availability'));
+        }
+      };
+    </script>
+</body>
+</html>

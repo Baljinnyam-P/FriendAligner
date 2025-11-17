@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View Calendar - FriendAligner</title>
+        <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
+    <div class="calendar-label" id="calendarMonthYear"></div>
+    <div class="calendar-grid" id="calendarGrid">
+        <!-- Days will be rendered by JS -->
+    </div>
+    <div style="text-align:center; margin-top:2rem;">
+        <a href="/availability" class="btn">Edit My Availability</a>
+    </div>
+        <script>
+            function renderMonthYear() {
+                const month = localStorage.getItem('calendar_month');
+                const year = localStorage.getItem('calendar_year');
+                const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                const label = document.getElementById('calendarMonthYear');
+                if (month && year) {
+                    label.textContent = `Calendar: ${monthNames[parseInt(month)]} ${year}`;
+                } else {
+                    label.textContent = "Group Availability Calendar";
+                }
+            }
+
+            async function renderCalendar() {
+                const token = localStorage.getItem('jwt_token');
+                const calendar_id = localStorage.getItem('calendar_id');
+                if (!token || !calendar_id) return;
+                // For demo, show 30 days, but fetch group availability for each day
+                const grid = document.getElementById('calendarGrid');
+                grid.innerHTML = '';
+                for (let day = 1; day <= 30; day++) {
+                    const today = new Date();
+                    const month = localStorage.getItem('calendar_month');
+                    const year = localStorage.getItem('calendar_year');
+                    const yyyy = year || today.getFullYear();
+                    const mm = month ? String(month).padStart(2, '0') : String(today.getMonth() + 1).padStart(2, '0');
+                    const dd = String(day).padStart(2, '0');
+                    const isoDate = `${yyyy}-${mm}-${dd}`;
+                    // Fetch group availability for this date
+                    let userSlots = [];
+                    try {
+                        const res = await fetch(`/api/calendar/${calendar_id}/group_availability?date=${isoDate}&group_id=1`, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            const users = data.users || {};
+                            for (const userInfo of Object.values(users)) {
+                                const name = userInfo.name;
+                                userInfo.slots.forEach(slot => {
+                                    let slotText = slot.status.charAt(0).toUpperCase() + slot.status.slice(1);
+                                    userSlots.push(`<div><strong>${name}:</strong> ${slotText}</div>`);
+                                });
+                            }
+                        }
+                    } catch {}
+                    const box = document.createElement('div');
+                    box.className = `day-box`;
+                    box.innerHTML = `${day}<br>${userSlots.join('')}`;
+                    box.style.cursor = 'pointer';
+                    box.onclick = function() {
+                        localStorage.setItem('edit_availability_date', isoDate);
+                        window.location.href = '/availability';
+                    };
+                    grid.appendChild(box);
+                }
+            }
+            renderMonthYear();
+            renderCalendar();
+        </script>
+</body>
+</html>
