@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Create Personal Calendar - FriendAligner</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
+    <!--<script src="{{ url_for('static', filename='js/main.js') }}" defer></script>-->
+    <script src="{{ url_for('static', filename='js/calendarLogic.js') }}" defer></script>
+
     <style>
       .calendar-form { max-width: 400px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
       .calendar-form h2 { margin-bottom: 1.5rem; }
@@ -14,11 +18,26 @@
     </style>
 </head>
 <body>
-    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
-    <div class="calendar-form">
+    <div class = "top-bar">
+        <a href="welcomePG.html">
+        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
+        </a>
+    </div>
+    <br><br><br><br><br><br>
+    <div id="title" style="font-size:1.2em;font-weight:bold;margin-bottom:1rem;"></div>
+    <div id="calendar" class="calendar-form">
         <h2>Create Personal Calendar</h2>
         <div id="selectedMonthYear" style="margin-bottom:1rem;font-weight:bold;"></div>
+
+
         <form id="calendarCreateForm">
+          <!--The group id shoudn't it be on backend??-->
+            <!--<label for="group_id">Group ID:</label>
+            <input type="text" name="group_id" id="group_id" required value="">-->
+
+        
+
+          <!--Date selection-->
             <label for="month">Select Month:</label>
             <select name="month" id="month" required>
                 <option value="">Month</option>
@@ -35,18 +54,61 @@
                 <option value="11">November</option>
                 <option value="12">December</option>
             </select>
+
             <label for="year">Select Year:</label>
             <select name="year" id="year" required>
+
                 <option value="">Year</option>
                 <script>
-                  for(let y = 2023; y <= 2030; y++) {
+                  for(let y = 2025; y <= 2035; y++) {
                     document.write(`<option value="${y}">${y}</option>`);
                   }
                 </script>
             </select>
+
+            <label for="name">Calendar Name:</label>
+            <input type="text" name="name" id="name" required value="">
+
+
             <button type="submit" class="btn">Confirm Choices</button>
         </form>
+
+    <!--Script to handle the user choice-->
     </div>
-    <script src="/static/main.js"></script>
+    
+    <script>
+      // Pre-fill group_id from localStorage if available
+      document.getElementById('calendarCreateForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const month = document.getElementById('month').value;
+        const year = document.getElementById('year').value;
+        const name = document.getElementById('name').value;
+        const token = localStorage.getItem('jwt_token');
+        if (!token) {
+          alert('You must be logged in.');
+          window.location.href = '/login';
+          return;
+        }
+        const res = await fetch('/api/calendar/create_personal', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ month, year, name })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('calendar_id', data.calendar_id);
+          localStorage.setItem('calendar_month', month);
+          localStorage.setItem('calendar_year', year);
+          alert('Calendar created!');
+          window.location.href = '/calendar_view';
+        } else {
+          const err = await res.json();
+          alert('Error: ' + (err.error || 'Failed to create calendar'));
+        }
+      };
+    </script>
 </body>
 </html>

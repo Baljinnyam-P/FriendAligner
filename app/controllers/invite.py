@@ -1,82 +1,119 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import User, Group, Invite, Notification
+from app.models import User, Group, Invite, Notification, Availability
 from datetime import datetime
 from flask import current_app
 import smtplib
 from email.mime.text import MIMEText
 from app.models import GroupMember
+from app.models import Calendar
 import os
 
 invite_bp = Blueprint('invite', __name__)
 
-#Not Complete
+#Send Invites to emails and create group & shared calendar
 @invite_bp.route('/send', methods=['POST'])
 @jwt_required()
 def send_invite():
     data = request.get_json()
-    group_id = data.get('group_id')
-    invited_user_id = data.get('invited_user_id')
-    calendar_id = data.get('calendar_id')
-    # get sender id from jwt
+    import re
+    emails = data.get('emails')  # Expecting a list of emails
+    date_str = data.get('date')
+    invite_date = None
+    month = data.get('month')
+    year = data.get('year')
     raw_identity = get_jwt_identity()
     try:
         sender_id = int(raw_identity)
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid token identity'}), 401
 
-    # If no group_id, create group for calendar/user
-    group = None
-    new_group_created = False
-    if not group_id:
-        group_name = f"Calendar Group {calendar_id or sender_id}"
-        group = Group(group_name=group_name, user_id=sender_id)
-        db.session.add(group)
-        db.session.commit()
-        group_id = group.group_id
-        new_group_created = True
-    else:
-        group = db.session.get(Group, group_id)
-        if not group:
-            return jsonify({'error': 'Group not found'}), 404
-
-    # Check if invited user exists
-    invited_user = db.session.get(User, invited_user_id)
-    if not invited_user:
-        return jsonify({'error': 'User not found'}), 404
-
-    # Accept date from frontend
-    date_str = data.get('date')
-    invite_date = None
     if date_str:
         try:
             invite_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         except Exception:
             return jsonify({'error': 'Invalid date format, expected YYYY-MM-DD'}), 400
-    # Create invite
-    invite = Invite(group_id=group_id, invited_user_id=invited_user_id, sender_id=sender_id, status='pending', date=invite_date)
-    db.session.add(invite)
-    db.session.commit()
 
-    # Create notification (in-app)
-    notif_msg = f"You have been invited to join group '{group.group_name}' by {db.session.get(User, sender_id).first_name}"
-    notification = Notification(user_id=invited_user_id, message=notif_msg, type='invite')
-    db.session.add(notification)
-    db.session.commit()
+    if not emails or not isinstance(emails, list):
+        return jsonify({'error': 'No emails provided'}), 400
 
-    # Send email notification (if email exists)
-    recipient_email = invited_user.email
-    if recipient_email:
-        subject = "Group Invite Notification"
-        body = notif_msg
-        send_email(recipient_email, subject, body)
+    # Check for existing group for sender for this month/year
+    group = Group.query.filter_by(organizer_id=sender_id, group_name=f"Calendar Group {sender_id}").first()
+    calendar = None
+    if group:
+        group_id = group.group_id
+        calendar = Calendar.query.filter_by(group_id=group_id, type='group', month=month, year=year).first()
+        if not calendar:
+            calendar = Calendar(group_id=group_id, name=f"Calendar Group {sender_id} Calendar", type='group', month=month, year=year)
+            db.session.add(calendar)
+            db.session.commit()
+        # Ensure sender is organizer in group
+        gm = GroupMember.query.filter_by(group_id=group_id, user_id=sender_id, role='organizer').first()
+        if not gm:
+            gm = GroupMember(group_id=group_id, user_id=sender_id, role='organizer')
+            db.session.add(gm)
+            db.session.commit()
+    #if sender is not in a group yet, create new group and calendar
+    else:
+        group_name = f"Calendar Group {sender_id}"
+        group = Group(group_name=group_name, organizer_id=sender_id)
+        db.session.add(group)
+        db.session.commit()
+        group_id = group.group_id
+        calendar = Calendar(group_id=group_id, name=f"{group_name} Calendar", type='group', month=month, year=year)
+        db.session.add(calendar)
+        db.session.commit()
+        gm = GroupMember(group_id=group_id, user_id=sender_id, role='organizer')
+        db.session.add(gm)
+        db.session.commit()
 
-    response = {'message': 'Invite sent successfully'}
-    if new_group_created:
-        response['group_id'] = group_id
+    email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    sent_invites = []
+    for email in emails:
+        if not re.match(email_regex, email):
+            continue  # skip invalid emails
+        # Prevent duplicate invites for this group
+        existing_invite = Invite.query.filter_by(group_id=group_id, email=email, status='pending').first()
+        if existing_invite:
+            continue
+        invited_user = User.query.filter_by(email=email).first()
+        if not invited_user:
+            invited_user = User(email=email)
+            db.session.add(invited_user)
+            db.session.commit()
+        # Generate invite token
+        #This token can be used to accept/decline invite via link
+        token = os.urandom(16).hex()
+        invite = Invite(group_id=group_id, invited_user_id=invited_user.user_id, sender_id=sender_id, status='pending', date=invite_date, email=email, token=token)
+        db.session.add(invite)
+        db.session.commit()
+        notif_msg = f"You have been invited to join group '{group.group_name}' by {db.session.get(User, sender_id).first_name}"
+        notification = Notification(user_id=invited_user.user_id, message=notif_msg, type='invite')
+        db.session.add(notification)
+        db.session.commit()
+        recipient_email = invited_user.email
+        if recipient_email:
+            subject = "Group Invite Notification"
+            body = notif_msg
+            send_email(recipient_email, subject, body)
+        sent_invites.append({
+            'email': email,
+            'invite_token': token
+        })
+
+    response = {
+        'message': 'Invites sent successfully',
+        'group_id': group_id,
+        'group_name': group.group_name,
+        'month': month,
+        'year': year,
+        'calendar_id': calendar.calendar_id,
+        'invited': sent_invites
+    }
     return jsonify(response), 201
 
+#Sending invites with email function
 def send_email(to_email, subject, body):
     smtp_server = current_app.config.get('SMTP_SERVER')
     smtp_port = current_app.config.get('SMTP_PORT')
@@ -95,6 +132,8 @@ def send_email(to_email, subject, body):
     except Exception as e:
         print(f"Email send failed: {e}")
 
+# Respond to invite (accept/decline)
+#When user accepts, they are added to the group and their personal availabilities are merged into the group calendar
 @invite_bp.route('/respond', methods=['POST'])
 @jwt_required()
 def respond_invite():
@@ -121,11 +160,19 @@ def respond_invite():
     sender_id = invite.sender_id
     group = db.session.get(Group, invite.group_id)
     invited_user = db.session.get(User, user_id)
-    # If group does not exist (edge case), create it
+    # Create group if it does not exist 
     if not group:
         group_name = f"Calendar Group {invite.group_id or sender_id}"
-        group = Group(group_name=group_name, user_id=sender_id)
+        group = Group(group_name=group_name, organizer_id=sender_id)
         db.session.add(group)
+        db.session.commit()
+        # Create group calendar
+        calendar = Calendar(group_id=group.group_id, name=f"{group_name} Calendar", type='group')
+        db.session.add(calendar)
+        db.session.commit()
+        # Add organizer as member
+        gm = GroupMember(group_id=group.group_id, user_id=sender_id, role='organizer')
+        db.session.add(gm)
         db.session.commit()
         invite.group_id = group.group_id
         db.session.commit()
@@ -134,22 +181,35 @@ def respond_invite():
     db.session.add(notification)
     db.session.commit()
 
-    # Send email notification to sender
+    # Send email notification to organizer (sender)
     sender = db.session.get(User, sender_id)
     if sender and sender.email:
-        subject = "Invite Response Notification"
-        body = notif_msg
+        subject = f"Invite {response.capitalize()} Notification"
+        body = f"User {invited_user.first_name} ({invited_user.email}) has {response} your invitation to group '{group.group_name}'."
         send_email(sender.email, subject, body)
 
-    # If accepted, add user to group
+    # If accepted, add user to group and merge all members' personal availabilities into group calendar
     if response == 'accepted' and group:
-        
         if not GroupMember.query.filter_by(group_id=group.group_id, user_id=invited_user.user_id).first():
             gm = GroupMember(group_id=group.group_id, user_id=invited_user.user_id, role='member')
             db.session.add(gm)
+            db.session.commit()
+        # Merge all group members' personal availabilities into group calendar
+        group_calendar = Calendar.query.filter_by(group_id=group.group_id, type='group').first()
+        group_members = GroupMember.query.filter_by(group_id=group.group_id).all()
+        for gm in group_members:
+            personal_calendar = Calendar.query.filter_by(owner_user_id=gm.user_id, type='personal').first()
+            if personal_calendar and group_calendar:
+                personal_avails = Availability.query.filter_by(calendar_id=personal_calendar.calendar_id).all()
+                for avail in personal_avails:
+                    exists = Availability.query.filter_by(calendar_id=group_calendar.calendar_id, user_id=avail.user_id, date=avail.date).first()
+                    if not exists:
+                        new_avail = Availability(user_id=avail.user_id, calendar_id=group_calendar.calendar_id, date=avail.date, status=avail.status)
+                        db.session.add(new_avail)
         db.session.commit()
     return jsonify({'message': f'Invite {response}'}), 200
 
+#Get pending invites for current user
 @invite_bp.route('/invite/pending', methods=['GET'])
 @jwt_required()
 def get_pending_invites():
@@ -167,7 +227,8 @@ def get_pending_invites():
     ]
     return jsonify(result), 200
 
-# Generate invite link (organizer only)
+# Generate invite link (organizer only) to be shared externally
+#Not completed for now
 @invite_bp.route('/invite/link', methods=['POST'])
 @jwt_required()
 def generate_invite_link():
@@ -189,6 +250,7 @@ def generate_invite_link():
     return jsonify({'invite_link': link, 'token': token}), 201
 
 # Fetch invite info by token (public)
+# To be used when user clicks invite link
 @invite_bp.route('/invite/<token>', methods=['GET'])
 def get_invite_by_token(token):
     invite = Invite.query.filter_by(token=token).first()
@@ -217,7 +279,7 @@ def respond_invite_token(token):
     invite.status = response
     db.session.commit()
     group = db.session.get(Group, invite.group_id)
-    organizer_id = group.user_id if group else None
+    organizer_id = group.organizer_id if group else None
     user = User.query.filter_by(email=email).first()
     # If accepted and user exists, add membership
     if response == 'accepted':

@@ -1,32 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Invite Friends - FriendAligner</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-      .navbar { background: #c2dfe3; }
-      .invite-form { max-width: 400px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
-      .invite-form h2 { margin-bottom: 1.5rem; }
-      .invite-form input, .invite-form button { width: 100%; margin: 0.5rem 0; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Invite Friends - FriendAligner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+
+
+  <style>
+    .navbar { background: #c2dfe3; }
+    .invite-form { max-width: 400px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
+    .invite-form h2 { margin-bottom: 1.5rem; }
+    .invite-form input, .invite-form select, .invite-form button { width: 100%; margin: 0.5rem 0; }
+  </style>
 </head>
+
+
+
 <body>
-    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
-    <div class="invite-form">
-        <h2>Invite Friends</h2>
-        <form id="inviteForm">
-            <input type="email" name="email" placeholder="Friend's Email" required>
-            <button type="submit" class="btn">Send Invite & Choose Date</button>
-        </form>
+  <!--header-->
+  <div class = "top-bar">
+        <a href="{{ url_for('main_menu') }}">
+        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
+        </a>
     </div>
-    <script>
-      document.getElementById('inviteForm').onsubmit = async function(e) {
-        e.preventDefault();
-        const email = e.target.email.value;
-        localStorage.setItem('invite_email', email);
-        window.location.href = '/date_selection';
-      };
-    </script>
+    <br><br><br><br><br><br>
+
+  <!--body invite - emails-->
+  <div class="invite-form">
+    <h2>Invite Friends</h2>
+    <form id="inviteForm">
+      <input type="text" id="emails" name="emails" placeholder="emails" multiple required>
+
+    <!--Select dates-->
+      <select id="month" name="month" required>
+        <option value="">Select Month</option>
+        <option value="1">January</option>
+        <option value="2">February</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
+      <input type="number" id="year" name="year" min="2023" max="2100" required placeholder="Year">
+      <button type="submit" id="sendBtn">Send Invite & Choose Date</button>
+    </form>
+    <div id="feedback" style="margin-top:20px;"></div>
+  </div>
+<script src="{{ url_for('static', filename='js/inviteLGC.js') }}"></script>
+
 </body>
 </html>

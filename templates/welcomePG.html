@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FriendAligner - Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
+</head>
+<body>
+    <!--Header-->
+    <div class = "top-bar">
+        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
+        <img src ="{{ url_for('static', filename='images/friendAlignerLogoIMG.png') }}" class="title-img" alt="FriendAligner Logo Img">
+    </div>
+    <br><br><br><br><br><br>
+
+
+    <!--Application descrpition-->
+    <div class="welcome-text">
+        <h1>Welcome to FriendAligner!</h1>
+        <div class ="welcome-p">
+        <p>
+            FriendAligner helps you stay organized and connected by aligning your schedule with friends, tracking important dates, and planning events together. 
+            Whether you're coordinating a weekend trip, syncing study sessions, or just keeping tabs on your commitments, FriendAligner makes it simple, social, and stress-free.
+        </p>
+
+        <p>
+            Our easy to use graphical user interface will allow to boost your personal workflow exponentially. Simply sign up for an 
+            account or log back in to start tracking your events and maintaining your lifestyle organize. 
+        </p>
+        <p> </p>
+        </div>
+      
+
+    <br>
+
+    <div class="img-desc">
+        <img src ="{{ url_for('static', filename='images/workflowImg.jpg') }}" class="imgblock">
+        <img src ="{{ url_for('static', filename='images/friendsHangout.webp') }}" class="imgblock">
+    </div>
+
+    <!--Prompting to create an account or login-->
+    <div class="container home-buttons">
+        <a href="{{ url_for('register_page') }}" class="btn">Sign Up for a Free Account</a>
+        <a href="{{ url_for('login_page') }}" class="btn">Login</a>
+    </div>
+</body>
+</html>

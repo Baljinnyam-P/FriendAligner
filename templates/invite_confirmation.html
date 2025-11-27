@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Invite Confirmation - FriendAligner</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
     <style>
       .navbar { background: #c2dfe3; }
       .confirmation-box { max-width: 400px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
@@ -12,59 +13,39 @@
     </style>
 </head>
 <body>
-    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
-    <div class="confirmation-box">
-        <h2>Invite Sent!</h2>
-        <p>Your invite has been sent to the following users:</p>
-        <div class="confirmation-list">
-            <ul id="inviteList">
-                <!-- Populated by JS -->
-            </ul>
-        </div>
-        <a href="/main_menu" class="btn">Back to Main Menu</a>
-            <script>
-                async function loadInvites() {
-                    const token = localStorage.getItem('jwt_token');
-                    const group_id = localStorage.getItem('group_id');
-                    if (!token || !group_id) return;
-                    try {
-                        const res = await fetch(`/api/group/${group_id}/members`, {
-                            headers: { 'Authorization': 'Bearer ' + token }
-                        });
-                        if (!res.ok) return;
-                        const members = await res.json();
-                        // For each member, get invite status (if any)
-                        const list = document.getElementById('inviteList');
-                        list.innerHTML = '';
-                        for (const m of members) {
-                            let status = 'Accepted';
-                            // Lookup invite for this user
-                            let inviteStatus = '';
-                            let inviteDate = '';
-                            try {
-                                const res2 = await fetch(`/api/invite/pending`, {
-                                    headers: { 'Authorization': 'Bearer ' + token }
-                                });
-                                if (res2.ok) {
-                                    const invites = await res2.json();
-                                    const found = invites.find(i => i.group_id == group_id && i.invited_user_id == m.user_id);
-                                    if (found) {
-                                        inviteStatus = found.status.charAt(0).toUpperCase() + found.status.slice(1);
-                                        inviteDate = found.date ? ` (${found.date})` : '';
-                                    }
-                                }
-                            } catch {}
-                            if (!inviteStatus) inviteStatus = status;
-                            const li = document.createElement('li');
-                            li.textContent = `${m.email || 'Unknown'} - ${inviteStatus}${inviteDate}`;
-                            list.appendChild(li);
-                        }
-                    } catch (err) {
-                        // fallback: static
-                    }
-                }
-                loadInvites();
-            </script>
+    <div class = "top-bar">
+        <a href="{{ url_for('main_menu') }}">
+        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
+        </a>
     </div>
+    <br><br><br><br><br><br>
+    <div class="confirmation-box">
+        <h2>Invites Sent!</h2>
+        <p>Invites have been sent to:</p>
+        <div class="confirmation-list">
+            <ul id="inviteList"></ul>
+        </div>
+        <p><strong>Group Name:</strong> <span id="groupName"></span></p>
+        <p><strong>Month:</strong> <span id="month"></span></p>
+        <p><strong>Year:</strong> <span id="year"></span></p>
+        <a href="/main_menu" class="btn">Back to Main Menu</a>
+    </div>
+    <script>
+    function getQueryParam(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+    document.getElementById('groupName').textContent = getQueryParam('group_name');
+    document.getElementById('month').textContent = getQueryParam('month');
+    document.getElementById('year').textContent = getQueryParam('year');
+    const invited = getQueryParam('invited');
+    if (invited) {
+        invited.split(',').forEach(email => {
+            const li = document.createElement('li');
+            li.textContent = email;
+            document.getElementById('inviteList').appendChild(li);
+        });
+    }
+    </script>
 </body>
 </html>

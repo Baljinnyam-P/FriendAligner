@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Date Selection - FriendAligner</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
     <style>
       .navbar { background: #c2dfe3; }
       .date-form { max-width: 400px; margin: 3rem auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
@@ -12,7 +13,13 @@
     </style>
 </head>
 <body>
-    <nav class="navbar"><span class="navbar-brand">FriendAligner</span></nav>
+    <div class = "top-bar">
+        <a href="welcomePG.html">
+        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
+        </a>
+    </div>
+    <br><br><br><br><br><br>
+    
     <div class="date-form">
         <h2>Select Date</h2>
         <form id="dateSelectionForm">

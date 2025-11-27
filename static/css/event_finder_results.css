@@ -1,0 +1,63 @@
+/* Modal Styles */
+.modal-bg {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 400px;
+  max-height: 80vh;
+  margin: auto;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 2px solid #c2dfe3;
+  overflow-y: auto;
+}
+.modal-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  cursor: pointer;
+  font-size: 1.5em;
+  color: #1f5f67;
+}
+body { 
+  font-family: Arial, sans-serif; 
+  margin: 0; 
+  padding: 16px; 
+}
+.container { 
+  display: flex; 
+  gap: 16px; 
+  align-items: flex-start; 
+}
+.results {
+   width: 40%; max-height: 80vh; overflow: auto; 
+  }
+.result-item {
+   padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; 
+  }
+.result-item:hover { 
+  background: #f7f7f7; 
+}
+.map { 
+  width: 60%; height: 80vh; min-height: 400px; 
+}
+.rating { 
+  color: #666; font-size: 0.9em; 
+}
+@media (max-width: 800px) {
+  .container { flex-direction: column; }
+  .results, .map { width: 100%; }
+  .map { height: 50vh; }
+}

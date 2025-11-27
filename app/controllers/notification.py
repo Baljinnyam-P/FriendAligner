@@ -9,7 +9,7 @@ from email.mime.text import MIMEText
 
 notification_bp = Blueprint('notification', __name__)
 
-#Not Cimplete
+#Get all notifications for current user
 @notification_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_notifications():
@@ -41,6 +41,7 @@ def get_notifications():
         result.append(notif)
     return jsonify(result), 200
 
+#For future use
 # Mark notification as read
 @notification_bp.route('/notifications/<int:notification_id>/read', methods=['POST'])
 @jwt_required()
@@ -68,6 +69,7 @@ def create_notification():
     db.session.commit()
     return jsonify({'message': 'Notification created', 'notification_id': notification.notification_id}), 201
 
+#For future use
 # Schedule day-before event reminder for all group members
 @notification_bp.route('/notifications/event/<int:event_id>/schedule_reminder', methods=['POST'])
 @jwt_required()
@@ -80,7 +82,7 @@ def schedule_event_reminder(event_id):
         return jsonify({'error': 'Event date missing'}), 400
     reminder_dt = datetime.combine(event.date, datetime.min.time()) - timedelta(days=1) + timedelta(hours=9)
     group = db.session.get(Group, event.group_id)
-    member_ids = [group.user_id] if group else []
+    member_ids = [group.organizer_id] if group else []
     if group:
         member_ids += [m.user_id for m in group.members]
     created = []
@@ -92,6 +94,7 @@ def schedule_event_reminder(event_id):
     db.session.commit()
     return jsonify({'message': 'Reminders scheduled', 'user_ids': created, 'scheduled_at': reminder_dt.isoformat()}), 201
 
+#For future use
 # Send due scheduled notifications (in-app + email) that are unsent
 @notification_bp.route('/notifications/send_due', methods=['POST'])
 @jwt_required()
@@ -109,6 +112,7 @@ def send_due_notifications():
     db.session.commit()
     return jsonify({'message': 'Due notifications dispatched', 'count': count}), 200
 
+#For future use
 # Remind non-responders (no availability 'available') for event date
 @notification_bp.route('/notifications/event/<int:event_id>/remind_nonresponders', methods=['POST'])
 @jwt_required()
@@ -117,7 +121,7 @@ def remind_nonresponders(event_id):
     if not event or not event.date:
         return jsonify({'error': 'Event not found or date missing'}), 404
     group = db.session.get(Group, event.group_id)
-    member_ids = [group.user_id] if group else []
+    member_ids = [group.organizer_id] if group else []
     if group:
         member_ids += [m.user_id for m in group.members]
     reminded = []
@@ -135,13 +139,15 @@ def remind_nonresponders(event_id):
     db.session.commit()
     return jsonify({'message': 'Non-responders reminded', 'user_ids': reminded}), 200
 
+
+#This used to send email notifications
 def _send_email(to_email, subject, body):
     smtp_server = current_app.config.get('SMTP_SERVER')
     smtp_port = current_app.config.get('SMTP_PORT')
     smtp_user = current_app.config.get('SMTP_USER')
     smtp_password = current_app.config.get('SMTP_PASSWORD')
     if not smtp_server or not smtp_user or not smtp_password:
-        return  # silently skip if not configured
+        return  
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = smtp_user

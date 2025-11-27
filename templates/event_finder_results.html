@@ -4,25 +4,29 @@
   <meta charset="utf-8" />
   <title>Event Finder Results</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; }
-    .container { display: flex; gap: 16px; align-items: flex-start; }
-    .results { width: 40%; max-height: 80vh; overflow: auto; }
-    .result-item { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; }
-    .result-item:hover { background: #f7f7f7; }
-    .map { width: 60%; height: 80vh; min-height: 400px; }
-    .rating { color: #666; font-size: 0.9em; }
-    @media (max-width: 800px) {
-      .container { flex-direction: column; }
-      .results, .map { width: 100%; }
-      .map { height: 50vh; }
-    }
-  </style>
-
-  <!-- Replace with your Maps JS API key. Restrict this key to your domain in Google Cloud Console. -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/event_finder_results.css') }}">
+  
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/event_finder_results.js') }}"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key={{ maps_api_key }}&libraries=places" async defer></script>
 </head>
 <body>
+  <script>
+    //get calendar type, personal or group    
+    function getCalendarTypeFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('type');
+    }
+    let type = getCalendarTypeFromUrl();
+    if (type) {
+      window.selectedCalendarType = type;
+      localStorage.setItem('selectedCalendarType', type);
+    } else if (localStorage.getItem('selectedCalendarType')) {
+      window.selectedCalendarType = localStorage.getItem('selectedCalendarType');
+    } else {
+      window.selectedCalendarType = 'personal';
+    }
+  </script>
   <nav class="navbar">
     <span class="navbar-brand">FriendAligner</span>
     <button onclick="window.history.back()" class="btn" style="margin-left:2rem;">&larr; Back</button>
@@ -49,213 +53,19 @@
   </div>
 
   <!-- Modal for place details -->
-  <div id="placeModal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:1000; align-items:center; justify-content:center;">
-    <div style="background:#fff; padding:2rem; border-radius:12px; max-width:400px; max-height:80vh; margin:auto; position:relative; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 2px solid #c2dfe3; overflow-y:auto;">
-      <span id="modalClose" style="position:absolute; top:8px; right:12px; cursor:pointer; font-size:1.5em; color:#1f5f67;">&times;</span>
+  <div id="placeModal" class="modal-bg">
+    <div class="modal-content">
+      <span id="modalClose" class="modal-close">&times;</span>
       <div id="modalContent"></div>
     </div>
   </div>
 
   <script>
-  const places = JSON.parse('{{ results | tojson | safe }}');
-  async function showModal(place) {
-    const modal = document.getElementById('placeModal');
-    const content = document.getElementById('modalContent');
-    // Fetch full details from backend
-    let details = place;
-    try {
-      const res = await fetch(`/api/event_finder/place_details?place_id=${place.place_id}`);
-      if (res.ok) {
-        const data = await res.json();
-        details = data.details;
-      }
-    } catch {}
-    let addToCalendarHtml = '';
-    const token = localStorage.getItem('jwt_token');
-    const group_id = localStorage.getItem('group_id');
-    const isOrganizer = localStorage.getItem('is_organizer') === 'true';
-    if (token && group_id) {
-      addToCalendarHtml = `
-        <div style='margin-top:1rem;'>
-          <label for='eventDate'><strong>Add to Calendar:</strong></label><br>
-          <input type='date' id='eventDate' style='margin-bottom:0.5rem;'>
-          <button id='addToCalendarBtn' class='btn' style='width:100%;margin-top:0.5rem;'>Add to Calendar</button>
-          <div id='addToCalendarMsg' style='margin-top:0.5rem; color:#1f5f67;'></div>
-        </div>
-      `;
-      if (isOrganizer) {
-        addToCalendarHtml += `
-          <div style='margin-top:1rem;'>
-            <button id='finalizeEventBtn' class='btn' style='width:100%;background:#1f5f67;color:#fff;'>Finalize Event</button>
-            <button id='deleteEventBtn' class='btn' style='width:100%;background:#c00;color:#fff;margin-top:0.5rem;'>Delete Event</button>
-            <div id='organizerMsg' style='margin-top:0.5rem; color:#1f5f67;'></div>
-          </div>
-        `;
-      }
-    } else {
-      addToCalendarHtml = `<div style='margin-top:1rem; color:#c00;'>Login and select a group to add events to your calendar.</div>`;
-    }
-    content.innerHTML = `
-      <h3 style="color:#1f5f67; margin-top:0;">${details.name}</h3>
-      <p><strong>Address:</strong> ${details.formatted_address || details.vicinity || ''}</p>
-      <p><strong>Rating:</strong> <span style="color:#1f5f67;">${details.rating || 'N/A'}</span></p>
-      ${details.website ? `<p><a href='${details.website}' target='_blank' style='color:#c2dfe3;'>Website</a></p>` : ''}
-      ${details.formatted_phone_number ? `<p><strong>Phone:</strong> ${details.formatted_phone_number}</p>` : ''}
-      ${details.opening_hours && details.opening_hours.weekday_text ? `<p><strong>Hours:</strong> ${details.opening_hours.weekday_text.join('<br>')}</p>` : ''}
-      ${details.photos && details.photos.length ? `<div style='max-height:180px; overflow-y:auto; margin-bottom:8px;'><strong>Photos:</strong><br>${details.photos.slice(0,4).map(ref => `<img src='https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=${ref}&key={{ maps_api_key }}' style='max-width:100%;margin-bottom:8px; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.10);'>`).join('')}</div>` : ''}
-      ${details.reviews && details.reviews.length ? `<div style='margin-top:8px;'><strong>Reviews:</strong><br>${details.reviews.slice(0,2).map(r => `<div style='margin-bottom:8px; background:#f8f9fa; border-radius:6px; padding:8px;'><strong style='color:#1f5f67;'>${r.author_name}</strong>: ${r.text}</div>`).join('')}</div>` : ''}
-      ${addToCalendarHtml}
-    `;
-    modal.style.display = 'flex';
-    // Add to Calendar logic
-    if (token && group_id) {
-      setTimeout(() => {
-        const btn = document.getElementById('addToCalendarBtn');
-        if (btn) {
-          btn.onclick = async function() {
-            const date = document.getElementById('eventDate').value;
-            const msg = document.getElementById('addToCalendarMsg');
-            if (!date) {
-              msg.textContent = 'Please select a date.';
-              return;
-            }
-            btn.disabled = true;
-            msg.textContent = 'Adding...';
-            try {
-              const res = await fetch('/api/events/create_from_place', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({
-                  group_id: group_id,
-                  place_id: place.place_id,
-                  date: date
-                })
-              });
-              if (res.ok) {
-                msg.textContent = 'Event added to calendar!';
-                btn.style.background = '#a3c4cb';
-                btn.textContent = 'Added';
-                setTimeout(() => { modal.style.display = 'none'; }, 1200);
-              } else {
-                const data = await res.json();
-                msg.textContent = data.error || 'Failed to add event.';
-                btn.disabled = false;
-              }
-            } catch (err) {
-              msg.textContent = 'Error adding event.';
-              btn.disabled = false;
-            }
-          };
-        }
-        // Organizer controls
-        if (isOrganizer) {
-          const finalizeBtn = document.getElementById('finalizeEventBtn');
-          const deleteBtn = document.getElementById('deleteEventBtn');
-          const orgMsg = document.getElementById('organizerMsg');
-          if (finalizeBtn) {
-            finalizeBtn.onclick = async function() {
-              orgMsg.textContent = 'Finalizing...';
-              try {
-                // You need event_id to finalize; fetch by place_id and group_id
-                const res = await fetch(`/api/events/group/${group_id}`,
-                  { headers: { 'Authorization': 'Bearer ' + token } });
-                if (res.ok) {
-                  const events = await res.json();
-                  const event = events.find(e => e.place_id === place.place_id);
-                  if (event) {
-                    const res2 = await fetch(`/api/events/finalize/${event.event_id}`, {
-                      method: 'POST',
-                      headers: { 'Authorization': 'Bearer ' + token }
-                    });
-                    if (res2.ok) {
-                      orgMsg.textContent = 'Event finalized!';
-                      setTimeout(() => { modal.style.display = 'none'; }, 1200);
-                    } else {
-                      orgMsg.textContent = 'Failed to finalize event.';
-                    }
-                  } else {
-                    orgMsg.textContent = 'Event not found.';
-                  }
-                }
-              } catch {
-                orgMsg.textContent = 'Error finalizing event.';
-              }
-            };
-          }
-          if (deleteBtn) {
-            deleteBtn.onclick = async function() {
-              orgMsg.textContent = 'Deleting...';
-              try {
-                const res = await fetch(`/api/events/group/${group_id}`,
-                  { headers: { 'Authorization': 'Bearer ' + token } });
-                if (res.ok) {
-                  const events = await res.json();
-                  const event = events.find(e => e.place_id === place.place_id);
-                  if (event) {
-                    const res2 = await fetch(`/api/events/${event.event_id}`, {
-                      method: 'DELETE',
-                      headers: { 'Authorization': 'Bearer ' + token }
-                    });
-                    if (res2.ok) {
-                      orgMsg.textContent = 'Event deleted!';
-                      setTimeout(() => { modal.style.display = 'none'; }, 1200);
-                    } else {
-                      orgMsg.textContent = 'Failed to delete event.';
-                    }
-                  } else {
-                    orgMsg.textContent = 'Event not found.';
-                  }
-                }
-              } catch {
-                orgMsg.textContent = 'Error deleting event.';
-              }
-            };
-          }
-        }
-      }, 100);
-    }
-  }
-  document.getElementById('modalClose').onclick = () => {
-    document.getElementById('placeModal').style.display = 'none';
-  };
-  window.onclick = function(event) {
-    const modal = document.getElementById('placeModal');
-    if (event.target === modal) modal.style.display = 'none';
-  };
-
-  function initMap() {
-    if (!places.length) return;
-    const map = new google.maps.Map(document.getElementById('map'), {
-      zoom: 12,
-      center: { lat: places[0].geometry.location.lat, lng: places[0].geometry.location.lng }
-    });
-    const infowindow = new google.maps.InfoWindow();
-    places.forEach((place, idx) => {
-      const marker = new google.maps.Marker({
-        position: { lat: place.geometry.location.lat, lng: place.geometry.location.lng },
-        map: map,
-        title: place.name
-      });
-      marker.addListener('click', function() {
-        infowindow.setContent(`<strong>${place.name}</strong><br>${place.formatted_address || place.vicinity || ''}<br>Rating: ${place.rating || 'N/A'}<br><button onclick='window.showPlaceDetails(${idx})'>More Details</button>`);
-        infowindow.open(map, marker);
-      });
-    });
-    window.showPlaceDetails = function(idx) {
-      showModal(places[idx]);
+    window.eventFinderResults = JSON.parse('{{ results | tojson | safe }}');
+    window.mapsApiKey = '{{ maps_api_key }}';
+    window.onload = function() {
+      if (window.initMap) window.initMap();
     };
-    // List click
-    document.querySelectorAll('.result-item').forEach(item => {
-      item.onclick = function() {
-        const idx = parseInt(item.getAttribute('data-index'));
-        showModal(places[idx]);
-      };
-    });
-  }
-  window.onload = initMap;
   </script>
 
 </body>

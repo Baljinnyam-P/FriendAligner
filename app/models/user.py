@@ -12,8 +12,8 @@ class User(db.Model):
     phone_number = db.Column(db.String(45), unique=True)
     is_admin = db.Column(db.Boolean, default=False)
     availabilities = db.relationship("Availability", backref="user")
-    groups = db.relationship("Group", backref="owner")
-    group_memberships = db.relationship("GroupMember", backref="user")
+    groups = db.relationship("Group", backref="owner", overlaps="organized_groups,owner")
+    group_memberships = db.relationship("GroupMember", backref="user_link", overlaps="group_member_links,user_link")
 
     def set_password(self, password):
         self.password = generate_password_hash(password)

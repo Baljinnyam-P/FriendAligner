@@ -52,7 +52,7 @@ def require_group_member(param_name='group_id'):
                 return jsonify({'error': 'Group not found'}), 404
             membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
             # organizer is already a member
-            if not membership and group.user_id != user_id:
+            if not membership and group.organizer_id != user_id:
                 return jsonify({'error': 'Must be group member'}), 403
             return fn(*args, **kwargs)
         return wrapper
@@ -95,7 +95,7 @@ def require_group_organizer(param_name='group_id'):
             group = db.session.get(Group, group_id_int)
             if not group:
                 return jsonify({'error': 'Group not found'}), 404
-            if int(group.user_id) != user_id:
+            if int(group.organizer_id) != user_id:
                 return jsonify({'error': 'Only organizer permitted'}), 403
             return fn(*args, **kwargs)
         return wrapper

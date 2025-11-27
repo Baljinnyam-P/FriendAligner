@@ -1,9 +1,11 @@
+
 from flask import Flask
 from config import Config
 from .extensions import db, jwt, cors
 from flask import render_template
 
 def create_app():
+       
     
     app = Flask(__name__, static_folder="../static", template_folder="../templates")
     app.config.from_object(Config)
@@ -30,7 +32,7 @@ def create_app():
     app.register_blueprint(invite_bp, url_prefix="/api/invite")
 
     from .controllers.group import group_bp
-    app.register_blueprint(group_bp, url_prefix="/api")
+    app.register_blueprint(group_bp, url_prefix="/api/group")
 
     from .controllers.event_finder import event_finder_bp
     app.register_blueprint(event_finder_bp, url_prefix="/api/event_finder")
@@ -39,8 +41,10 @@ def create_app():
     app.register_blueprint(chat_bp, url_prefix="/api/chat")
 
     @app.route("/")
-    def home():
-        return render_template("index.html")
+    def welcome_page():
+            return render_template("welcomePG.html")
+    
+
 
     @app.route("/register")
     def register_page():
@@ -64,11 +68,7 @@ def create_app():
 
     @app.route("/calendar_view")
     def calendar_view():
-        return render_template("calendar_view.html")
-
-    @app.route("/availability")
-    def availability():
-        return render_template("availability.html")
+        return render_template("calendar.html")
 
     @app.route("/invite")
     def invite():
@@ -89,5 +89,28 @@ def create_app():
     @app.route("/group/invite")
     def group_invite():
         return render_template("invite.html")
+    
+
+    @app.route("/shared_calendar_view")
+    def shared_calendar_view():
+        from flask import request
+        group_id = request.args.get('group_id', type=int)
+        calendar_id = request.args.get('calendar_id', type=int)
+        # Fallbacks if not found
+        selectedCalendarType = "group" if group_id else "personal"
+        return render_template(
+            "shared_calendar.html",
+            selectedCalendarType=selectedCalendarType,
+            group_id=group_id,
+            calendar_id=calendar_id
+        )
+    
+    @app.route("/notifications")
+    def notifications():
+        return render_template("notifications.html")
+    
+    @app.route("/groups_overview")
+    def groups_overview():
+        return render_template("groups_overview.html")
 
     return app

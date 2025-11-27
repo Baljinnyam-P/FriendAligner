@@ -2,47 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name ="viewport" content ="width=device-width,initial-scale=1.0">
     <title>Main Menu - FriendAligner</title>
-    <link rel="stylesheet" href="/static/style.css">
-        <script src="/static/main.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
+    <script src="{{ url_for('static', filename='js/auth.js') }}" ></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </head>
 <body>
-    <nav class="navbar">
-        <span class="navbar-brand">FriendAligner</span>
-        <span style="position:absolute;right:30px;top:16px;display:flex;align-items:center;gap:32px;">
-            <span id="notifIcon" style="cursor:pointer;">
-                <span style="font-weight:bold;">Notifications</span>
-                <span id="notifCount" style="background:#e84545;color:#fff;border-radius:50%;padding:2px 6px;font-size:12px;position:absolute;top:-8px;right:-8px;display:none;">0</span>
-            </span>
-            <span id="navbarUser" style="font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;"></span>
-        </span>
-            <script src="/static/navbar_user.js"></script>
-    </nav>
-    <div id="notifModal" style="display:none;position:fixed;top:60px;right:30px;z-index:1000;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);width:350px;max-height:400px;overflow:auto;padding:1rem;">
-        <h3>Invites & Notifications</h3>
-        <ul id="notifList" style="list-style:none;padding:0;"></ul>
-        <button onclick="closeNotifModal()" style="margin-top:1rem;">Close</button>
+    <div class = "top-bar">
+        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
+        <div class="topbar-actions">
+            <a href="{{ url_for('notifications') }}" class="topbar-link">Notifications</a>
+            <button type="button" class ="logoutMainPage">Logout</button>
+        </div>
     </div>
+
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="{{ url_for('notifications') }}" class="navbar-link">Notifications</a>
+        </div>
+    </nav>
+
+    <br><br><br><br><br><br>
+
+    <!--Menu Options-->
     <div class="container">
         <h2 style="text-align:center;">Main Menu</h2>
         <div class="main-menu-row">
+        <!--Invite friends and generate new calendar-->
             <div class="menu-box">
                 <h3>Shared Calendar</h3>
                 <p>Create and manage a shared calendar for your group. Invite friends to join and coordinate events together.</p>
-                <a href="/group/invite" class="btn">Invite Friends</a>
+                <a href="{{ url_for('invite') }}" class="btn">Invite Friends</a>
+                <a href="{{ url_for('groups_overview') }}" class="btn" style="margin-top:10px;">View Shared Calendar</a>
             </div>
+        <!--Access personal calendars-->
             <div class="menu-box">
                 <h3>Personal Calendar</h3>
                 <p>Set up your own personal calendar to track your availability and manage your schedule.</p>
-                <a href="/calendar/create" class="btn">Create Personal Calendar</a>
-                <a href="/calendar_view" class="btn">View My Calendar</a>
+                <a href="{{ url_for('calendar_create') }}" class="btn">Create Personal Calendar</a>
+                <a href="{{ url_for('calendar_view') }}" class="btn">View My Calendar</a>
             </div>
+        <!--Event finder-->
             <div class="menu-box">
                 <h3>Event Finder</h3>
                 <p>Discover new events and locations nearby. Suggest events for your group to attend together.</p>
-                <button class="btn" onclick="goToEventFinder()">Find New Events</button>
+                    <a href="{{ url_for('event_finder') }}" class="btn">Find New Events</a>
+                <a href ="" class="btn" >Previous Viewed Events <br>(Coming Soon)</a>
             </div>
         </div>
     </div>
+
 </body>
 </html>

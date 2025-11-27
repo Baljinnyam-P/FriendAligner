@@ -1,5 +1,5 @@
 -- MySQL Workbench Forward Engineering
--- Fixed version of team's schema with corrected foreign key references
+-- 3 version of team's schema with corrected foreign key references
 
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
@@ -34,12 +34,12 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `FriendAligner`.`Groups` (
   `group_id` INT NOT NULL AUTO_INCREMENT,
-  `user_id` INT NULL,
-  `group_name` VARCHAR(45) NULL,
+  `organizer_id` INT NOT NULL,
+  `group_name` VARCHAR(45) NOT NULL,
   PRIMARY KEY (`group_id`),
-  INDEX `FK_user_id_idx` (`user_id` ASC) VISIBLE,
-  CONSTRAINT `FK_User_id`
-    FOREIGN KEY (`user_id`)
+  INDEX `FK_organizer_id_idx` (`organizer_id` ASC) VISIBLE,
+  CONSTRAINT `FK_Organizer_id`
+    FOREIGN KEY (`organizer_id`)
     REFERENCES `FriendAligner`.`Users` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
@@ -75,12 +75,26 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `FriendAligner`.`Calendar` (
   `calendar_id` INT NOT NULL AUTO_INCREMENT,
-  `month` FLOAT NULL,
-  `date` DATE NULL,
-  `user_id` INT NULL,
+  `type` ENUM('personal', 'group') NOT NULL,
+  `owner_user_id` INT NULL,
+  `group_id` INT NULL,
   `name` VARCHAR(100) NULL,
-  PRIMARY KEY (`calendar_id`))
-ENGINE = InnoDB;
+  `month` INT NULL,
+  `year` INT NULL,
+  PRIMARY KEY (`calendar_id`),
+  INDEX `FK_owner_user_id_idx` (`owner_user_id` ASC),
+  INDEX `FK_group_id_idx` (`group_id` ASC),
+  CONSTRAINT `FK_calendar_owner_user_id`
+    FOREIGN KEY (`owner_user_id`)
+    REFERENCES `FriendAligner`.`Users` (`user_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  CONSTRAINT `FK_calendar_group_id`
+    FOREIGN KEY (`group_id`)
+    REFERENCES `FriendAligner`.`Groups` (`group_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
@@ -112,32 +126,26 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `FriendAligner`.`Availability` (
   `availability_id` INT NOT NULL AUTO_INCREMENT,
-  `user_id` INT NULL,
-  `group_id` INT NULL,
-  `calendar_id` INT NULL,
-  `date` DATE NULL,
-  `status` VARCHAR(20) DEFAULT 'pending',
+  `user_id` INT NOT NULL,
+  `calendar_id` INT NOT NULL,
+  `date` DATE NOT NULL,
+  `status` VARCHAR(32) NOT NULL,
+  `description` VARCHAR(255) NULL,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`availability_id`),
-  INDEX `FK_user_id_idx` (`user_id` ASC) VISIBLE,
-  INDEX `FK_group_id_idx` (`group_id` ASC) VISIBLE,
-  INDEX `FK_calendar_id_idx` (`calendar_id` ASC) VISIBLE,
+  INDEX `FK_user_id_idx` (`user_id` ASC),
+  INDEX `FK_calendar_id_idx` (`calendar_id` ASC),
   CONSTRAINT `FK_availability_user_id`
     FOREIGN KEY (`user_id`)
     REFERENCES `FriendAligner`.`Users` (`user_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `FK_availability_group_id`
-    FOREIGN KEY (`group_id`)
-    REFERENCES `FriendAligner`.`Groups` (`group_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT `FK_availability_calendar_id`
     FOREIGN KEY (`calendar_id`)
     REFERENCES `FriendAligner`.`Calendar` (`calendar_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB;
 
 -- -----------------------------------------------------
 -- Table `FriendAligner`.`Invites`
@@ -178,30 +186,41 @@ CREATE TABLE IF NOT EXISTS `FriendAligner`.`Invites` (
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `FriendAligner`.`Events` (
   `event_id` INT NOT NULL AUTO_INCREMENT,
-  `group_id` INT NOT NULL,
+  `calendar_id` INT NOT NULL,
+  `group_id` INT NULL,
   `created_by_user_id` INT NOT NULL,
   `name` VARCHAR(120) NOT NULL,
+  `description` TEXT NULL,
   `date` DATE NOT NULL,
-  `start_time` TIME NULL,
-  `end_time` TIME NULL,
-  `place_id` VARCHAR(64) NULL,
-  `location_name` VARCHAR(120) NULL,
+  `start_time` DATETIME NULL,
+  `end_time` DATETIME NULL,
   `address` VARCHAR(255) NULL,
+  `location_name` VARCHAR(120) NULL,
+  `image_url` VARCHAR(255) NULL,
+  `google_maps_url` VARCHAR(255) NULL,
+  `place_url` VARCHAR(255) NULL,
   `finalized` BOOLEAN DEFAULT FALSE,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`event_id`),
+  INDEX `FK_events_calendar_id_idx` (`calendar_id` ASC),
   INDEX `FK_events_group_id_idx` (`group_id` ASC),
   INDEX `FK_events_creator_id_idx` (`created_by_user_id` ASC),
+  CONSTRAINT `FK_events_calendar_id`
+    FOREIGN KEY (`calendar_id`)
+    REFERENCES `FriendAligner`.`Calendar` (`calendar_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
   CONSTRAINT `FK_events_group_id`
     FOREIGN KEY (`group_id`)
     REFERENCES `FriendAligner`.`Groups` (`group_id`)
-    ON DELETE CASCADE
+    ON DELETE SET NULL
     ON UPDATE CASCADE,
   CONSTRAINT `FK_events_creator_id`
     FOREIGN KEY (`created_by_user_id`)
     REFERENCES `FriendAligner`.`Users` (`user_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
 -- -----------------------------------------------------

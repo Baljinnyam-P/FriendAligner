@@ -1,33 +1,32 @@
-/* Calendar view styles */
-.calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1rem;
-    margin: 2rem auto;
-    max-width: 700px;
+/* Navbar content layout for main menu */
+.navbar-content {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    gap: 32px;
 }
-.day-box {
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    padding: 1rem;
-    text-align: center;
-    min-height: 80px;
+.navbar-link {
+    font-weight: bold;
+    color: #222;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 1.1rem;
 }
-.available {
-    background: #d4f8e8;
+.navbar-link:hover {
+    text-decoration: underline;
 }
-.busy {
-    background: #f8d4d4;
+.navbar-user {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+    color: #222;
+    font-size: 1.1rem;
 }
-.pending {
-    background: #f8f3d4;
-}
-.calendar-label {
-    text-align: center;
-    margin-top: 2rem;
-    font-size: 1.2rem;
-}
+/* === Main Menu & General Layout === */
+/* Calendar grid and day box styles moved to calendarMODS.css */
 
 /* Availability form styles */
 .availability-form {
@@ -108,10 +107,14 @@ body {
 }
 .navbar {
     background: #c2dfe3;
-    color: #fff;
-    padding: 1rem;
+    color: #222;
+    width: 100%;
+    min-height: 60px;
+    padding: 0 32px;
     display: flex;
     align-items: center;
+    position: relative;
+    z-index: 999;
 }
 .navbar-brand {
     background: #fff;
@@ -129,7 +132,7 @@ body {
 .container {
     max-width: 400px;
     margin: 2rem auto;
-    background: #fff;
+    background: #a0cbcf;
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -145,16 +148,21 @@ body {
     background: #c2dfe3;
     color: #fff;
     padding: 0.75rem 2rem;
-    margin: 0.5rem;
-    border: none;
-    border-radius: 4px;
+    margin: 1rem;
+    border:none;
+    border-radius: 10px;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     text-decoration: none;
     font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s;
 }
+.signUp-prompt{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    text-align: center;
+}
 .btn:hover {
-    background: #1f5f67;
+    background: #000000;
 }
 input[type="text"], input[type="email"], input[type="password"] {
     width: 100%;
@@ -193,4 +201,8 @@ button[type="submit"] {
 .menu-box .btn {
     margin-top: 1rem;
     width: 80%;
+}
+
+.nameDiv{
+    margin-right:15px;
 }

@@ -1,3 +1,4 @@
+// Login form submission handler, go to main menu
 function handleLogin(event) {
     event.preventDefault();
     const form = event.target;
@@ -10,6 +11,9 @@ function handleLogin(event) {
     .then(result => {
         if (result.access_token) {
             localStorage.setItem('jwt_token', result.access_token);
+            if (result.user_id) {
+                localStorage.setItem('user_id', result.user_id);
+            }
             window.location.href = '/main_menu';
         } else {
             alert(result.msg || 'Login failed');

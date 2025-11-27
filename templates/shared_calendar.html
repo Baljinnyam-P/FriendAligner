@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+    <!--Connecting CSS page and stating HTML format-->
+    <head>
+        <title>Shared Calendar</title>
+        <meta charset="UTF-8">
+        <meta name ="viewport" content ="width=device-width,initial-scale=1.0">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/calendarMODS.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
+        <script>
+            // Set calendar type to "group" for shared calendar
+            window.selectedCalendarType = "{{ selectedCalendarType }}";
+            localStorage.setItem('selectedCalendarType', window.selectedCalendarType);
+        </script>
+        <script src="{{ url_for('static', filename='js/auth.js') }}" ></script>
+        <script src="{{ url_for('static', filename='js/calendarLogic.js') }}" defer></script>
+        <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    </head>
+
+<!--Webpage body-->
+<body>
+
+<!--Stationary Top bar-->
+<div class="top-bar">
+    <a href="{{ url_for('main_menu') }}">
+        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
+    </a>
+    <button type="button" class ="logoutMainPage">Logout</button>
+</div>
+<br><br><br><br><br>
+
+<!-- Group Info Section -->
+<div id="groupInfo">
+    <div id="groupName"></div>
+    <div id="groupMembers"></div>
+</div>
+<!-- Month/Year label -->
+<div id="calendarMonthYear" class="calendar-label"></div>
+
+<!-- Month navigation -->
+<div class="month-nav">
+    <button id="prevMonthBtn" class="btn">Previous Month</button>
+    <button id="nextMonthBtn" class="btn">Next Month</button>
+</div>
+
+<!-- Weekday header -->
+<div class="calendar-header">
+    <div class="weekday">Sun</div>
+    <div class="weekday">Mon</div>
+    <div class="weekday">Tue</div>
+    <div class="weekday">Wed</div>
+    <div class="weekday">Thu</div>
+    <div class="weekday">Fri</div>
+    <div class="weekday">Sat</div>
+</div>
+
+<!-- Calendar grid -->
+<div id="calendarGrid"
+             class="calendarGrid"
+             data-group-id="{{ group_id }}"
+             data-calendar-id="{{ calendar_id }}"
+             data-calendar-type="{{ selectedCalendarType }}">
+        </div>
+
+<!-- Modal for availability/event -->
+<div id="modal" class="modal">
+    <div class="modalContent">
+        <h3 id="modalDate"></h3>
+        <label for="availabilityStatusDropdown">Status:</label>
+        <select id="availabilityStatusDropdown">
+            <option value="available">Available</option>
+            <option value="busy">Busy</option>
+            <option value="not sure">Not Sure</option>
+        </select>
+        <br>
+        <label for="availabilityInput">Details/Plans :</label>
+        <input type="text" id="availabilityInput" placeholder="Add details or plans">
+        <div id="availabilityInfo"></div>
+        <div id="groupAvailDetails"></div>
+        <button id="saveAvailabilityBtn">Save</button>
+        <button id="goToEventFinderBtn">Find Event for This Date</button>
+        <button id="closeModalBtn">Close</button>
+    </div>
+</div>
+
+</html>

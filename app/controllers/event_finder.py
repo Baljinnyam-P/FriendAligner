@@ -7,6 +7,7 @@ from app.services.google_places import find_places, get_place_details
 
 event_finder_bp = Blueprint('event_finder', __name__)
 
+# Get place details by place_id
 @event_finder_bp.route('/place_details', methods=['GET'])
 def place_details():
     place_id = request.args.get('place_id')
@@ -18,35 +19,6 @@ def place_details():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-@event_finder_bp.route('/event_finder/search', methods=['POST'])
-@jwt_required()
-def search_events():
-    data = request.get_json()
-    zip_code = data.get('zip_code')
-    keyword = data.get('keyword', 'event')
-    max_results = data.get('max_results', 10)
-    try:
-        results = find_places(zip_code, keyword, max_results)
-        return jsonify({'results': results}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@event_finder_bp.route('/event_finder', methods=['POST'])
-@jwt_required()
-def create_event_finder():
-    data = request.get_json()
-    group_id = data.get('group_id')
-    calendar_id = data.get('calendar_id')
-    zip_code = data.get('zip_code')
-    # Validate group and calendar
-    group = db.session.get(Group, group_id)
-    calendar = db.session.get(Calendar, calendar_id)
-    if not group or not calendar:
-        return jsonify({'error': 'Group or Calendar not found'}), 404
-    event_finder = EventFinder(group_id=group_id, calendar_id=calendar_id, zip_code=zip_code)
-    db.session.add(event_finder)
-    db.session.commit()
-    return jsonify({'message': 'EventFinder record created', 'eventFinder_id': event_finder.eventFinder_id}), 201
 
 @event_finder_bp.route('/event_finder/<int:eventFinder_id>', methods=['GET'])
 @jwt_required()
