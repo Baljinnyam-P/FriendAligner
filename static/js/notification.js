@@ -1,6 +1,7 @@
 
 // Notification handling script
 document.addEventListener('DOMContentLoaded', function() {
+  //If we want to keep track of notification Count
   const notifCount = document.getElementById('notifCount');
   const notifList = document.getElementById('notifList');
 
@@ -14,11 +15,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const notifications = await res.json();
     let inviteCount = 0;
     notifList.innerHTML = '';
+    let latestPendingInviteId = null;
+    for (const n of notifications) {
+      if (n.type === 'invite' && n.invite_id && n.status === 'pending') {
+        if (!latestPendingInviteId) latestPendingInviteId = n.invite_id;
+      }
+    }
     for (const n of notifications) {
       const li = document.createElement('li');
       li.innerHTML = `<strong>${n.message}</strong><br><span style='color:#888;'>${n.type}</span>`;
-      if (n.type === 'invite' && n.invite_id && n.status === 'pending') {
-        inviteCount++;
+      if (
+        n.type === 'invite' &&
+        n.invite_id &&
+        n.status === 'pending' &&
+        n.invite_id === latestPendingInviteId
+      ) {
         const actions = document.createElement('div');
         actions.style.marginTop = '0.5rem';
         actions.innerHTML = `
@@ -29,10 +40,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       notifList.appendChild(li);
     }
-    notifCount.textContent = inviteCount;
-    notifCount.style.display = inviteCount > 0 ? 'inline-block' : 'none';
+    // Update invite count badge, remove if dont want it
+    if (notifCount) {
+      notifCount.textContent = inviteCount;
+      notifCount.style.display = inviteCount > 0 ? 'inline-block' : 'none';
+    }
   }
-
+  //Respond to invite
   window.respondInvite = async function(invite_id, response) {
     const token = localStorage.getItem('jwt_token');
     if (!token) return;

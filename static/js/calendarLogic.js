@@ -90,7 +90,6 @@ function renderPersonalCalendarGrid(calendar_id, user_id, token) {
                     statusDiv.classList.add("status-not-sure");
                 }
                 dayDiv.appendChild(statusDiv);
-                console.log("Rendering availability for date:", dateStr, availMap[dateStr]);
                 if (availMap[dateStr].description) {
                     const descDiv = document.createElement("div");
                     descDiv.className = "availability-description status-desc";
@@ -109,8 +108,6 @@ function renderPersonalCalendarGrid(calendar_id, user_id, token) {
             // Modal logic: pass event details if present
             dayDiv.onclick = () => {
                 if (hasEvent) {
-                    console.log("Opening modal with event for date:", dateStr);
-                    console.log(eventsByDate[dateStr]);
                     openModal(dateStr, eventsByDate[dateStr], calendar_id, user_id, token, "personal");
                 } else if (eventMap[dateStr]) {
                     openModal(dateStr, eventMap[dateStr], calendar_id, user_id, token, "personal");
@@ -191,16 +188,32 @@ function renderGroupCalendarGrid(calendar_id, group_id, token) {
                     });
                 // Store details for modal expansion
                 dayDiv.dataset.availDetails = JSON.stringify(dateMap[dateStr]);
-            }
+                }
             // Render event from Events table
-            let hasEvent = false;
-            if (eventsByDate[dateStr]) {
-                hasEvent = true;
-                const eventDiv = document.createElement("div");
-                eventDiv.className = "event-status";
-                eventDiv.textContent = eventsByDate[dateStr].name || "Event";
-                dayDiv.appendChild(eventDiv);
-            }
+                let hasEvent = false;
+                if (eventsByDate[dateStr]) {
+                    hasEvent = true;
+                    const event = eventsByDate[dateStr];
+                    const eventDiv = document.createElement("div");
+                    eventDiv.className = "event";
+                    if (event.status === "finalized") {
+                        const badge = document.createElement("span");
+                        badge.className = "finalized-badge";
+                        badge.textContent = "Event Finalized";
+                        eventDiv.appendChild(badge);
+                    } else if (event.status === "suggested") {
+                        const badge = document.createElement("span");
+                        badge.className = "suggested-badge";
+                        badge.textContent = "Event Suggested";
+                        eventDiv.appendChild(badge);
+                    }
+                    // Event name
+                    const titleSpan = document.createElement("span");
+                    titleSpan.className = "event-title";
+                    titleSpan.textContent = event.name || "Event";
+                    eventDiv.appendChild(titleSpan);
+                    dayDiv.appendChild(eventDiv);
+                }
             // Modal logic: pass event details if present
             dayDiv.onclick = () => {
                 // If group calendar, expand modal to show all member availabilities for this date
@@ -271,7 +284,7 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
             });
         }
     }
-    
+
     const eventFinderBtn = document.getElementById("goToEventFinderBtn");
     if (eventFinderBtn) {
         eventFinderBtn.onclick = function() {
@@ -280,7 +293,6 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
     }
     if (eventDetails) {
         // Build modal HTML for event details using CSS classes for styling
-        //Can customize later for the modal look
         let infoHtml = `<div class='event-modal-content'>`;
         // Event name: place_url link (clicking on it goes to google places on map)
         if (eventDetails.place_url || eventDetails.address) {
@@ -291,29 +303,33 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
         }
         // Place link (Google Maps Place URL) if available
         if (eventDetails.place_url) {
-            // Only show address if available
             if (eventDetails.address) {
                 const mapsUrl = eventDetails.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventDetails.address)}`;
                 infoHtml += `<p><strong>Address:</strong> <a href='${mapsUrl}' target='_blank' class='event-modal-address'>${eventDetails.address}</a></p>`;
             }
         } else if (eventDetails.address) {
-            // Fallback to address link if place_url is not available
             const mapsUrl = eventDetails.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventDetails.address)}`;
             infoHtml += `<p><strong>Address:</strong> <a href='${mapsUrl}' target='_blank' class='event-modal-address'>${eventDetails.address}</a></p>`;
         }
-        //Render images on the modal, Optional
+        // Render images on the modal, Optional
         if (eventDetails.image_url) infoHtml += `<img src='${eventDetails.image_url}' alt='Event image' class='event-modal-image'>`;
         // Modal action buttons (edit/delete)
         infoHtml += `<div class='event-modal-actions'>`;
         // Remove button for Events table events
         if (eventDetails.event_id) {
             infoHtml += `<button class='remove-event-btn' title='Delete Event'><span class='remove-icon'>&#128465;</span> Remove Event</button>`;
-
         }
         // Remove button for Availability Event
         if (eventDetails.availability_id) {
             infoHtml += `<button class='remove-availability-btn' title='Remove Event'><span class='remove-icon'>&#128465;</span> Remove Event</button>`;
-
+        }
+        // Show finalize button in modal if organizer and event is suggested
+        if (
+            eventDetails &&
+            eventDetails.status === "suggested" &&
+            String(localStorage.getItem("user_id")) === String(localStorage.getItem("organizer_id"))
+        ) {
+            infoHtml += `<button class='finalize-btn' id='finalizeEventBtn'>Finalize</button>`;
         }
         infoHtml += `</div>`;
         infoHtml += `</div>`;
@@ -338,7 +354,6 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
             removeBtn.onclick = (e) => {
                 e.stopPropagation();
                 if (confirm("Delete this event from your calendar?")) {
-                    // Use window global if needed
                     if (typeof deleteEventFromCalendar === 'function') {
                         deleteEventFromCalendar(eventDetails.event_id, calendar_id, token);
                     } else if (window.deleteEventFromCalendar) {
@@ -358,12 +373,21 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
                 }
             };
         }
-        //Go to Event Finder button
-        const findBtn = document.querySelector('.find-event-btn');
-        if (findBtn) {
-            findBtn.onclick = (e) => {
+        // Finalize button logic
+        const finalizeBtn = document.getElementById("finalizeEventBtn");
+        if (finalizeBtn && eventDetails && eventDetails.event_id) {
+            finalizeBtn.onclick = function(e) {
                 e.stopPropagation();
-                window.location.href = '/event_finder?date=' + encodeURIComponent(date);
+                fetch(`/api/events/finalize/${eventDetails.event_id}`, {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + token }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    closeModal();
+                    renderCalendar();
+                });
             };
         }
         return;
@@ -421,13 +445,13 @@ function saveAvailability() {
         const token = localStorage.getItem('jwt_token');
         const calendar_id = ctx.calendar_id;
         const group_id = ctx.group_id;
-        console.log("See info from backend:", calendar_id, group_id, ctx);
         if (!calendar_id || !token) {
             alert('Missing calendar or login info.');
             return;
         }
         const payload = { date, status };
         if (description) payload.description = description;
+        //If currentAvailabilityId exists, do PUT to update, else POST to create new
         if (window.currentAvailabilityId) {
             authFetch(`/api/calendar/${calendar_id}/availability/${window.currentAvailabilityId}`, {
                 method: "PUT",
@@ -535,21 +559,72 @@ window.addEventListener('DOMContentLoaded', function() {
     // Fetch and render group info if on shared calendar
     if (selectedCalendarType === "group") {
         const token = localStorage.getItem('jwt_token');
-        fetchUserContext().then(ctx => {
-            if (ctx.group_id) {
-                authFetch(`/api/group/${ctx.group_id}/members`, {
-                    method: "GET",
-                    headers: {"Authorization": "Bearer " + token}
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Use group_name and members from response
-                    document.getElementById("groupName").textContent = data.group_name ? `Group: ${data.group_name}` : "Group";
-                    const memberNames = (data.members || []).map(m => `${m.first_name || ""} ${m.last_name || ""}`.trim()).filter(n => n);
-                    document.getElementById("groupMembers").textContent = `Members: ${memberNames.join(", ")}`;
-                });
-            }
-        });
+        fetchUserContext().then(function(ctx) {
+    if (ctx.group_id) {
+        fetchAndRenderGroupMembers(ctx.group_id, token, ctx.user_id);
+        }
+    });
     }
     renderCalendar();
 });
+
+function removeMemberFromGroup(group_id, user_id, token, memberElem) {
+    authFetch(`/api/group/${group_id}/remove_member`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ user_id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            // re-fetch and re-render members:
+            fetchAndRenderGroupMembers(group_id, token);
+            renderCalendar();
+        } else {
+            alert(data.error || "Failed to remove member.");
+        }
+    })
+    .catch(() => {
+        alert("Error removing member.");
+    });
+}
+
+function fetchAndRenderGroupMembers(group_id, token, currentUserId) {
+    authFetch(`/api/group/${group_id}/members`, {
+        method: "GET",
+        headers: { "Authorization": "Bearer " + token }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Store organizer_id for later use
+        localStorage.setItem("organizer_id", data.organizer_id);
+        document.getElementById("groupName").textContent = data.group_name ? `Group: ${data.group_name}` : "Group";
+        const membersDiv = document.getElementById("groupMembers");
+        membersDiv.innerHTML = '<strong>Members:</strong> ';
+        (data.members || []).forEach(m => {
+            const memberSpan = document.createElement('span');
+            memberSpan.textContent = `${m.first_name || ""} ${m.last_name || ""}`.trim();
+            memberSpan.className = "group-member-name";
+            // Only show remove button if current user is organizer and member is not organizer
+            if (Number(currentUserId) === Number(data.organizer_id) && m.user_id !== data.organizer_id) {
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = "Remove";
+                removeBtn.className = "remove-member-btn";
+                removeBtn.onclick = function() {
+                    if (confirm(`Remove ${memberSpan.textContent} from group? This will also remove their availabilities.`)) {
+                        removeMemberFromGroup(group_id, m.user_id, token, currentUserId);
+                    }
+                };
+                memberSpan.appendChild(removeBtn);
+            }
+            membersDiv.appendChild(memberSpan);
+            membersDiv.appendChild(document.createTextNode(", "));
+        });
+        // Remove trailing comma
+        if (membersDiv.lastChild) membersDiv.removeChild(membersDiv.lastChild);
+    });
+}

@@ -17,7 +17,7 @@ class Event(db.Model):
     image_url = db.Column(db.String(255), nullable=True)
     google_maps_url = db.Column(db.String(255), nullable=True)
     place_url = db.Column(db.String(255), nullable=True)
-    finalized = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(20), nullable=False, default='suggested') # suggested or finalized for group calendars
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

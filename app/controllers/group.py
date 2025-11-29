@@ -2,6 +2,9 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
 from app.models import Group, GroupMember, User, Calendar, Availability
+from app.models.notification import Notification
+from app.utils.send_email import send_email
+
 
 group_bp = Blueprint('group', __name__)
 
@@ -64,7 +67,7 @@ def add_member(group_id):
     return jsonify({'message': 'Member added', 'group_member_id': member.gm_id}), 201
 
 # Remove member from group (organizer only)
-@group_bp.route('/group/<int:group_id>/remove_member', methods=['POST'])
+@group_bp.route('/<int:group_id>/remove_member', methods=['POST'])
 @jwt_required()
 def remove_member(group_id):
     # Only organizer can remove members
@@ -83,8 +86,19 @@ def remove_member(group_id):
     # Remove member's availabilities from the shared group calendar
     group_calendar = Calendar.query.filter_by(group_id=group_id, type='group').first()
     if group_calendar:
-        
         Availability.query.filter_by(calendar_id=group_calendar.calendar_id, user_id=remove_user_id).delete()
+    db.session.commit()
+    # Notify remaining members about the removal
+    remaining_members = GroupMember.query.filter_by(group_id=group_id).all()
+    removed_user = db.session.get(User, remove_user_id)
+    removed_name = f"{removed_user.first_name} {removed_user.last_name}" if removed_user else "A member"
+    notif_msg = f"{removed_name} has left the group '{group.group_name}'."
+    for m in remaining_members:
+        notification = Notification(user_id=m.user_id, message=notif_msg, type='group_member_removed')
+        db.session.add(notification)
+        member_user = db.session.get(User, m.user_id)
+        if member_user and member_user.email:
+            send_email(member_user.email, "Group Member Removed", notif_msg)
     db.session.commit()
     return jsonify({'message': 'Member removed'}), 200
 
@@ -107,6 +121,7 @@ def get_group_members(group_id):
             })
     return jsonify({
         'group_name': group.group_name,
+        'organizer_id': group.organizer_id,
         'members': member_list
     }), 200
 
@@ -158,3 +173,27 @@ def user_groups():
             ]
         })
     return jsonify({'groups': group_list})
+
+
+# Get all groups that current user organizes
+@group_bp.route('/user/organized_groups', methods=['GET'])
+@jwt_required()
+def user_organized_groups():
+    user_id = get_jwt_identity()
+    groups = Group.query.filter_by(organizer_id=user_id).all()
+    group_list = []
+    for group in groups:
+        members = (
+            db.session.query(User)
+            .join(GroupMember, User.user_id == GroupMember.user_id)
+            .filter(GroupMember.group_id == group.group_id)
+            .all()
+        )
+        group_list.append({
+            'group_id': group.group_id,
+            'group_name': group.group_name,
+            'members': [
+                {'first_name': m.first_name, 'last_name': m.last_name} for m in members
+            ]
+        })
+    return jsonify({'organized_groups': group_list})

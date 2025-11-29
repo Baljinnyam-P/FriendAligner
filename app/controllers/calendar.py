@@ -3,9 +3,12 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
+from app.utils.send_email import send_email
+from app.models import Event
+from sqlalchemy import extract
 
 calendar_bp = Blueprint('calendar', __name__)
-from app.models import User, Group, Calendar, Availability, GroupMember
+from app.models import User, Group, Calendar, Availability, GroupMember, Notification
 
 
 
@@ -57,8 +60,7 @@ def get_personal_calendar(user_id, year, month):
             item['description'] = a.description
         avail_result.append(item)
     # Get all events for this calendar and month/year
-    from app.models import Event
-    from sqlalchemy import extract
+    
     events = Event.query.filter(
         Event.calendar_id == calendar.calendar_id,
         extract('year', Event.date) == year,
@@ -78,7 +80,7 @@ def get_personal_calendar(user_id, year, month):
             'place_url': e.place_url,
             'start_time': e.start_time.strftime('%Y-%m-%d %H:%M') if e.start_time else None,
             'end_time': e.end_time.strftime('%Y-%m-%d %H:%M') if e.end_time else None,
-            'finalized': e.finalized
+            'status': e.status
         })
     return jsonify({
         'calendar_id': calendar.calendar_id,
@@ -190,6 +192,32 @@ def set_or_update_availability(calendar_id):
         availability = Availability(user_id=user_id, calendar_id=calendar_id, date=date, status=status, description=description)
         db.session.add(availability)
     db.session.commit()
+
+    #Check if all members are available for this date (for group calendars) to send notification
+    calendar = db.session.get(Calendar, calendar_id)
+    group_id = calendar.group_id if calendar else None
+    if group_id:
+        group = db.session.get(Group, group_id)
+        member_ids = [m.user_id for m in GroupMember.query.filter_by(group_id=group_id).all()]
+        if group.organizer_id not in member_ids:
+            member_ids.append(group.organizer_id)
+        all_available = True
+        for uid in member_ids:
+            rows = Availability.query.filter_by(calendar_id=calendar_id, date=date, user_id=uid).all()
+            user_has = any(r.status == 'available' for r in rows)
+            if not user_has:
+                all_available = False
+                break
+        if all_available:
+            notif_msg = f"All members are available on {date} in group '{group.group_name}'."
+            #Send notifications via email also
+            for m_id in member_ids:
+                notification = Notification(user_id=m_id, message=notif_msg, type='all_available')
+                db.session.add(notification)
+                member_user = db.session.get(User, m_id)
+                if member_user and member_user.email:
+                    send_email(member_user.email, "All Members Available", notif_msg)
+            db.session.commit()
     return jsonify({'message': 'Availability set/updated', 'availability_id': availability.availability_id}), 200
 
 
@@ -206,7 +234,7 @@ def edit_availability(calendar_id, availability_id):
     data = request.get_json()
     status = data.get('status')
     date = data.get('date')
-    #Only update description if provided
+    # Only update description if provided
     description = data.get('description')
     availability = db.session.get(Availability, availability_id)
     if not availability or availability.user_id != user_id or availability.calendar_id != calendar_id:
@@ -215,10 +243,34 @@ def edit_availability(calendar_id, availability_id):
         availability.status = status
     if date:
         availability.date = date
-    #Only update description if provided
     if description is not None:
         availability.description = description
     db.session.commit()
+
+    # Check if all members are available for this date (for group calendars) to send notification and email
+    calendar = db.session.get(Calendar, calendar_id)
+    group_id = calendar.group_id if calendar else None
+    if group_id:
+        group = db.session.get(Group, group_id)
+        member_ids = [m.user_id for m in GroupMember.query.filter_by(group_id=group_id).all()]
+        if group.organizer_id not in member_ids:
+            member_ids.append(group.organizer_id)
+        all_available = True
+        for uid in member_ids:
+            rows = Availability.query.filter_by(group_id=group_id, calendar_id=calendar_id, date=availability.date, user_id=uid).all()
+            user_has = any(r.status == 'available' for r in rows)
+            if not user_has:
+                all_available = False
+                break
+        if all_available:
+            notif_msg = f"All members are available on {availability.date} in group '{group.group_name}'."
+            for m_id in member_ids:
+                notification = Notification(user_id=m_id, message=notif_msg, type='all_available')
+                db.session.add(notification)
+                member_user = db.session.get(User, m_id)
+                if member_user and member_user.email:
+                    send_email(member_user.email, "All Members Available", notif_msg)
+            db.session.commit()
     return jsonify({'message': 'Availability updated'}), 200
 
 # View a user's availability for a specific date

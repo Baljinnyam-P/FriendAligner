@@ -131,11 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 //redirect to calendar view 
                 setTimeout(() => {
                   modal.style.display = 'none';
-                  if (calendar_type === 'group') {
-                    window.location.href = '/shared_calendar_view';
-                  } else {
-                    window.location.href = '/calendar_view';
-                  }
+                    window.location.href = '/main_menu';
                 }, 1200);
               } else {
                 const data = await res.json();
@@ -148,7 +144,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
           };
         }
-        //Not complete for now, for future organizer controls
         // Organizer controls
         if (isOrganizer) {
           const finalizeBtn = document.getElementById('finalizeEventBtn');

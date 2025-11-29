@@ -31,9 +31,20 @@
   <div class="invite-form">
     <h2>Invite Friends</h2>
     <form id="inviteForm">
+
+      <!-- Group selection dropdown -->
+
+      <label for="groupSelect">Select Group:</label>
+      <select id="groupSelect" name="groupSelect">
+        <option value="">Loading groups...</option>
+      </select>
+      <div id="newGroupNameDiv" style="display:none; margin-top:0.5em;">
+        <input type="text" id="newGroupName" name="newGroupName" placeholder="Enter new group name">
+      </div>
+
       <input type="text" id="emails" name="emails" placeholder="emails" multiple required>
 
-    <!--Select dates-->
+      <!--Select dates-->
       <select id="month" name="month" required>
         <option value="">Select Month</option>
         <option value="1">January</option>
