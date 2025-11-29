@@ -4,8 +4,10 @@ from flask import Blueprint, render_template, request, jsonify, current_app, red
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import Event, Group, User
+from app.models import Event, Group, User, Notification
 from datetime import datetime
+from email.mime.text import MIMEText
+import smtplib
 from ..services.google_places import find_places, get_place_details
 events_bp = Blueprint('events', __name__)
 
@@ -25,7 +27,6 @@ def create_event_from_place():
         user_id = int(raw_identity)
     except (TypeError, ValueError):
         return jsonify({'error': 'Invalid token identity'}), 401
-    # Support both group and personal calendar
     group_id = data.get('group_id')
     calendar_id = data.get('calendar_id')
     calendar_type = data.get('calendar_type', 'group')
@@ -54,7 +55,6 @@ def create_event_from_place():
         except Exception:
             start_time = None
             end_time = None
-        # Build Google Maps Place URL
         place_url = f"https://www.google.com/maps/place/?q=place_id:{details.get('place_id')}" if details.get('place_id') else None
         event = Event(
             calendar_id=calendar_id,
@@ -69,13 +69,13 @@ def create_event_from_place():
             image_url=image_url,
             google_maps_url=google_maps_url,
             created_by_user_id=user_id,
-            finalized=False,
+            status="finalized",  # finalized for personal calendar
             place_url=place_url
         )
         db.session.add(event)
         db.session.commit()
         return jsonify({'message': 'Event added to personal calendar', 'event_id': event.event_id}), 201
-    #For group shared calendar
+    # For group shared calendar
     else:
         if not group_id or not place_id or not date:
             return jsonify({'error': 'group_id, place_id, date required'}), 400
@@ -83,20 +83,16 @@ def create_event_from_place():
             details = get_place_details(place_id)
         except Exception as e:
             return jsonify({'error': str(e)}), 400
-        # Members can suggest events; only organizer can finalize
-        is_organizer = False
         group = db.session.get(Group, group_id)
-        if group and user_id == group.organizer_id:
-            is_organizer = True
-        #This url for building Google Maps Place URL
+        is_organizer = group and user_id == group.organizer_id
         place_url = f"https://www.google.com/maps/place/?q=place_id:{details.get('place_id')}" if details.get('place_id') else None
         photos = details.get('photos')
         image_url = None
         api_key = current_app.config.get("GOOGLE_PLACES_API_KEY")
         if isinstance(photos, list) and photos and api_key:
             photo_reference = photos[0]
-            # This url for getting the photo from Google Places API
             image_url = f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference={photo_reference}&key={api_key}"
+        event_status = "finalized" if is_organizer else "suggested"
         event = Event(
             calendar_id=calendar_id,
             group_id=group_id,
@@ -108,20 +104,14 @@ def create_event_from_place():
             location_name=details.get('name'),
             address=details.get('formatted_address'),
             image_url=image_url,
-            # This url for going to google maps with the address
             google_maps_url=f"https://www.google.com/maps/search/?api=1&query={details.get('formatted_address').replace(' ', '+')}" if details.get('formatted_address') else None,
             created_by_user_id=user_id,
-            finalized=is_organizer,
+            status=event_status,  # suggested or finalized
             place_url=place_url
         )
         db.session.add(event)
         db.session.commit()
-        # Notify group members
-        group = db.session.get(Group, group_id)
-        member_ids = [group.organizer_id] if group else []
-        if group:
-            member_ids += [m.user_id for m in group.members]
-            # Notification logic removed
+        # Notify group members to be implemented later
         return jsonify({'message': 'Event created from place', 'event_id': event.event_id}), 201
 
 #For Future Use
@@ -144,7 +134,7 @@ def list_events(group_id):
         'image_url': e.image_url,
         'google_maps_url': e.google_maps_url,
         'place_url': getattr(e, 'place_url', None),
-        'finalized': e.finalized
+        'status': e.status  # <-- updated field
     } for e in events]
     return jsonify(result), 200
 
@@ -172,8 +162,6 @@ def remove_personal_event(availability_id):
     return jsonify({'message': 'Event removed from personal calendar'}), 200
 
 
-#Not used for now
-# Finalize event and notify
 @events_bp.route('/finalize/<int:event_id>', methods=['POST'])
 @jwt_required()
 def finalize_event(event_id):
@@ -188,24 +176,20 @@ def finalize_event(event_id):
         return jsonify({'error': 'Invalid token identity'}), 401
     if not group or user_id != group.organizer_id:
         return jsonify({'error': 'Only organizer can finalize events'}), 403
-    event.finalized = True
-    db.session.commit()
-
-    # Notify group members (excluding the organizer who finalized)
+    event.status = "finalized"  # mark as finalized
+    # Notify group members
     member_ids = [m.user_id for m in group.members]
     if group.organizer_id not in member_ids:
         member_ids.append(group.organizer_id)
-    from app.models import Notification, User
-    from flask import current_app
-    import smtplib
-    from email.mime.text import MIMEText
     for uid in member_ids:
         if uid == user_id:
             continue  # Skip the organizer who finalized
+        # Create notification message
         notif_msg = f"Event '{event.name}' has been finalized for group '{group.group_name}' on {event.date}."
+        #Build Notification object
         notification = Notification(user_id=uid, message=notif_msg, type='event_finalized')
         db.session.add(notification)
-        # Send email if user has email
+        # Send email to member
         member = db.session.get(User, uid)
         if member and member.email:
             subject = "Event Finalized Notification"

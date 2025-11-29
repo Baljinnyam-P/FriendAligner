@@ -38,25 +38,28 @@ def send_invite():
     if not emails or not isinstance(emails, list):
         return jsonify({'error': 'No emails provided'}), 400
 
-    # Check for existing group for sender for this month/year
-    group = Group.query.filter_by(organizer_id=sender_id, group_name=f"Calendar Group {sender_id}").first()
+    group_id = data.get('group_id')
     calendar = None
-    if group:
-        group_id = group.group_id
+    if group_id:
+        group = Group.query.get(group_id)
+        if not group:
+            return jsonify({'error': 'Group not found'}), 404
+        if group.organizer_id != sender_id:
+            return jsonify({'error': 'Only organizer can send invites for this group'}), 403
         calendar = Calendar.query.filter_by(group_id=group_id, type='group', month=month, year=year).first()
         if not calendar:
-            calendar = Calendar(group_id=group_id, name=f"Calendar Group {sender_id} Calendar", type='group', month=month, year=year)
+            calendar = Calendar(group_id=group_id, name=f"{group.group_name} Calendar", type='group', month=month, year=year)
             db.session.add(calendar)
             db.session.commit()
-        # Ensure sender is organizer in group
         gm = GroupMember.query.filter_by(group_id=group_id, user_id=sender_id, role='organizer').first()
         if not gm:
             gm = GroupMember(group_id=group_id, user_id=sender_id, role='organizer')
             db.session.add(gm)
             db.session.commit()
-    #if sender is not in a group yet, create new group and calendar
     else:
-        group_name = f"Calendar Group {sender_id}"
+        group_name = data.get('group_name', '').strip()
+        if not group_name:
+            group_name = f"Calendar Group {sender_id}"
         group = Group(group_name=group_name, organizer_id=sender_id)
         db.session.add(group)
         db.session.commit()

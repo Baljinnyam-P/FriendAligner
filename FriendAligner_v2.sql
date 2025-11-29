@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS `FriendAligner`.`Events` (
   `image_url` VARCHAR(255) NULL,
   `google_maps_url` VARCHAR(255) NULL,
   `place_url` VARCHAR(255) NULL,
-  `finalized` BOOLEAN DEFAULT FALSE,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'suggested', --suggested or finalized
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`event_id`),
