@@ -102,6 +102,41 @@ def remove_member(group_id):
     db.session.commit()
     return jsonify({'message': 'Member removed'}), 200
 
+# End group session (organizer only)
+@group_bp.route('/<int:group_id>/end_session', methods=['POST'])
+@jwt_required()
+def end_group_session(group_id):
+    raw_identity = get_jwt_identity()
+    group = db.session.get(Group, group_id)
+    if not group:
+        return jsonify({'error': 'Group not found'}), 404
+    if int(raw_identity) != group.organizer_id:
+        return jsonify({'error': 'Only organizer can end session'}), 403
+    # Get all members
+    members = GroupMember.query.filter_by(group_id=group_id).all()
+    member_ids = [m.user_id for m in members]
+    # Get group calendar
+    group_calendar = Calendar.query.filter_by(group_id=group_id, type='group').first()
+    # Remove all availabilities for group calendar
+    if group_calendar:
+        Availability.query.filter_by(calendar_id=group_calendar.calendar_id).delete()
+        db.session.delete(group_calendar)
+    # Remove all group members
+    for m in members:
+        db.session.delete(m)
+    # Notify all members
+    notif_msg = f"The group session '{group.group_name}' has ended. You have been removed from the group and shared calendar."
+    for user_id in member_ids:
+        notification = Notification(user_id=user_id, message=notif_msg, type='group_session_ended')
+        db.session.add(notification)
+        member_user = db.session.get(User, user_id)
+        if member_user and member_user.email:
+            send_email(member_user.email, "Group Session Ended", notif_msg)
+    # Delete group
+    db.session.delete(group)
+    db.session.commit()
+    return jsonify({'message': 'Group session ended, members removed, calendar deleted, notifications sent.'}), 200
+
 # View all members in a group
 @group_bp.route('/<int:group_id>/members', methods=['GET'])
 @jwt_required()

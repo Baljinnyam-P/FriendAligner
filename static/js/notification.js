@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     if (!res || !res.ok) return;
     const notifications = await res.json();
-    let inviteCount = 0;
     notifList.innerHTML = '';
     let latestPendingInviteId = null;
     for (const n of notifications) {
@@ -24,6 +23,21 @@ document.addEventListener('DOMContentLoaded', function() {
     for (const n of notifications) {
       const li = document.createElement('li');
       li.innerHTML = `<strong>${n.message}</strong><br><span style='color:#888;'>${n.type}</span>`;
+      // Add mark as read button if unread
+      if (!n.read) {
+        const markBtn = document.createElement('button');
+        markBtn.textContent = 'Mark as Read';
+        markBtn.className = 'notif-mark-read-btn';
+        markBtn.style.marginLeft = '1em';
+        markBtn.onclick = async function() {
+          await markNotificationRead(n.notification_id);
+          li.style.opacity = '0.5';
+          markBtn.disabled = true;
+          // Update notification count badge in navbar immediately
+          updateNotifCount();
+        };
+        li.appendChild(markBtn);
+      }
       if (
         n.type === 'invite' &&
         n.invite_id &&
@@ -40,10 +54,28 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       notifList.appendChild(li);
     }
-    // Update invite count badge, remove if dont want it
+    // Helper to update notification count badge
+    function updateNotifCount() {
+      const unreadCount = notifications.filter(n => !n.read).length;
+      if (notifCount) {
+        notifCount.textContent = unreadCount;
+        notifCount.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+      }
+    }
+    // Mark notification as read
+    async function markNotificationRead(notification_id) {
+      const token = localStorage.getItem('jwt_token');
+      if (!token) return;
+      await authFetch(`/api/notifications/${notification_id}/read`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+    }
+    // Update notification count badge in navbar (show only unread)
     if (notifCount) {
-      notifCount.textContent = inviteCount;
-      notifCount.style.display = inviteCount > 0 ? 'inline-block' : 'none';
+      const unreadCount = notifications.filter(n => !n.read).length;
+      notifCount.textContent = unreadCount;
+      notifCount.style.display = unreadCount > 0 ? 'inline-block' : 'none';
     }
   }
   //Respond to invite

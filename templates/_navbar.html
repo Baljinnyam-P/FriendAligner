@@ -1,0 +1,12 @@
+<!-- navbar.html: Shared navbar partial for all pages -->
+<div class="top-bar">
+    <a href="{{ url_for('main_menu') }}">
+        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
+    </a>
+    <div class="topbar-actions">
+        <a href="{{ url_for('main_menu') }}" class="topbar-link {% if active_page == 'main_menu' %}active{% endif %}">Home</a>
+        <a href="{{ url_for('notifications') }}" class="topbar-link {% if active_page == 'notifications' %}active{% endif %}">Notifications <span id="notifCount" class="notif-badge" style="display:none"></span></a>
+        <span id="navbarUser" class="topbar-link"></span>
+        <a href="#" class="topbar-link logout-link">Logout</a>
+    </div>
+</div>

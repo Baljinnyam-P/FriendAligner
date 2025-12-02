@@ -1,3 +1,19 @@
+// Global logout function
+function logoutAndRedirect() {
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_id');
+    localStorage.clear();
+    window.location.href = '/login';
+}
+
+// Attach logout logic to all logout buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutBtns = document.querySelectorAll('.logoutMainPage');
+    logoutBtns.forEach(btn => {
+        btn.onclick = logoutAndRedirect;
+    });
+});
 // Get JWT token from localStorage
 function getJwtToken() {
     return localStorage.getItem('jwt_token');

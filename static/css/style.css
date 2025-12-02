@@ -1,3 +1,23 @@
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.4);
+    z-index: 999;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+.modal {
+    transition: opacity 0.3s;
+    z-index: 1000;
+}
+.topbar-link.active {
+    color: #007bff;
+    text-decoration: underline;
+}
 /* Navbar content layout for main menu */
 .navbar-content {
     display: flex;
@@ -21,9 +41,28 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 300px;
+    max-width: 180px;
     color: #222;
     font-size: 1.1rem;
+    margin: 0 1em;
+    padding: 0.2em 0.6em;
+    background: #e6f2ff;
+    border-radius: 16px;
+}
+.logout-link {
+    color: #222;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 1.1rem;
+    margin-left: 1em;
+    padding: 0.2em 0.6em;
+    border-radius: 16px;
+    background: #f7f7f7;
+    transition: background 0.2s;
+}
+.logout-link:hover {
+    background: #e6f2ff;
+    color: #007bff;
 }
 /* === Main Menu & General Layout === */
 /* Calendar grid and day box styles moved to calendarMODS.css */
@@ -149,14 +188,21 @@ body {
     color: #fff;
     padding: 0.75rem 2rem;
     margin: 1rem;
-    border:none;
+    border:none;    
     border-radius: 10px;
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     text-decoration: none;
     font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s;
+
 }
+.logout-link:hover {
+    color: #007bff;
+    text-decoration: underline;
+    background: none;
+}
+
 .signUp-prompt{
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     text-align: center;

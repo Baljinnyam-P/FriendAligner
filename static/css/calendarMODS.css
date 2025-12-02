@@ -1,3 +1,8 @@
+.day:hover {
+  background: #eaf6f6;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
 /*  Calendar Grid & Shared Calendar Styles */
 .calendar-grid {
   display: grid;
@@ -240,21 +245,98 @@
     color: #217a3c;
 }
 .finalize-btn {
-    background: linear-gradient(90deg, #2ecc40 60%, #27ae60 100%);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 6px 16px;
-    font-size: 1em;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(46,204,64,0.12);
-    transition: background 0.2s, box-shadow 0.2s;
-    margin-top: 8px;
-    margin-bottom: 4px;
+  background: #2ecccc;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 2rem;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  font-size: 1rem;
+  cursor: pointer;
+  margin: 1rem 0 0.5rem 0;
+  transition: background 0.2s;
+  display: inline-block;
 }
 .finalize-btn:hover {
-    background: linear-gradient(90deg, #27ae60 60%, #2ecc40 100%);
-    box-shadow: 0 4px 12px rgba(46,204,64,0.18);
+  background: #27ae60;
+}
+
+/* Base styling for all event action buttons in modal */
+.event-action-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.event-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.event-action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Icon styling inside buttons */
+.event-action-icon {
+    font-size: 16px;
+    display: inline-block;
+}
+
+/* Container for action buttons */
+.event-modal-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+.remove-event-btn,
+.remove-availability-btn {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* Height adjustment for event action buttons */
+.event-action-btn {
+  min-height: 32px;
+  height: 32px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* Disabled state */
+.event-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.event-action-btn:disabled:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 600px) {
+    .event-modal-action-row {
+        flex-direction: column;
+    }
+    
+    .event-action-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 

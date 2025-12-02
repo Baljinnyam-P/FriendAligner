@@ -79,7 +79,7 @@ document.getElementById('dateSelectionForm').onsubmit = async function(e) {
         alert('Please select a valid date.');
         return;
     }
-    const dateStr = `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`;
+    const dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     localStorage.setItem('selected_date', dateStr);
     const token = localStorage.getItem('jwt_token');
     const email = localStorage.getItem('invite_email');

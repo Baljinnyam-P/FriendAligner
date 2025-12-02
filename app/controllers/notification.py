@@ -41,12 +41,16 @@ def get_notifications():
         result.append(notif)
     return jsonify(result), 200
 
-#For future use
-# Mark notification as read
-@notification_bp.route('/notifications/<int:notification_id>/read', methods=['POST'])
+
+# Mark notification as read (active)
+@notification_bp.route('/<int:notification_id>/read', methods=['POST'])
 @jwt_required()
 def mark_read(notification_id):
-    user_id = get_jwt_identity()
+    raw_identity = get_jwt_identity()
+    try:
+        user_id = int(raw_identity)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid token identity'}), 401
     notification = db.session.get(Notification, notification_id)
     if not notification or notification.user_id != user_id:
         return jsonify({'error': 'Notification not found or unauthorized'}), 404

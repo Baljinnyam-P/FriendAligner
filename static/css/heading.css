@@ -34,6 +34,15 @@
     z-index: 1000;      /* make sure it stays on top */
 }
 
+.notif-badge {
+  background: #3b82f6;
+  color: #fff;
+  border-radius: 16px;
+  padding: 0.2em 0.6em;
+  font-size: 0.9em;
+  margin-left: 0.5em;
+  vertical-align: middle;
+}
 
 /*adds title page on top bar*/
 .logoutMainPage{

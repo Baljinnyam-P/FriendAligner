@@ -1,3 +1,12 @@
+.notif-badge {
+  background: #007bff;
+  color: #fff;
+  border-radius: 16px;
+  padding: 0.2em 0.6em;
+  font-size: 0.9em;
+  margin-left: 0.5em;
+  vertical-align: middle;
+}
 .navbar { 
   background: #c2dfe3; 
 }
