@@ -5,9 +5,14 @@
   <title>Event Finder Results</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/event_finder_results.css') }}">
-  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/calendarMODS.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/notification.css') }}">
+
   <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
   <script src="{{ url_for('static', filename='js/event_finder_results.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/navbar_user.js') }}" defer></script>
   <script src="https://maps.googleapis.com/maps/api/js?key={{ maps_api_key }}&libraries=places" async defer></script>
 </head>
 <body>
@@ -27,11 +32,11 @@
       window.selectedCalendarType = 'personal';
     }
   </script>
-  <nav class="navbar">
-    <span class="navbar-brand">FriendAligner</span>
-    <button onclick="window.history.back()" class="btn" style="margin-left:2rem;">&larr; Back</button>
-  </nav>
-  <h2 style="margin-top:2rem;">Top Results</h2>
+  {% include '_navbar.html' %}
+  <div style="margin-top:2rem;">
+    <button onclick="window.history.back()" class="btn">&larr; Back</button>
+  </div>
+  <h2 class="page-heading" style="margin-top:2rem;">Top Results</h2>
   <div class="container">
     <div class="results">
       <ul id="results-list" style="list-style:none; padding-left:0; margin:0;">

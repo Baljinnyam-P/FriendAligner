@@ -2,7 +2,7 @@
 from flask import Flask
 from config import Config
 from .extensions import db, jwt, cors
-from flask import render_template
+from flask import render_template, request
 
 def create_app():
        
@@ -90,10 +90,9 @@ def create_app():
     def group_invite():
         return render_template("invite.html")
     
-
+    # Shared Calendar View, accepts group_id and calendar_id as query parameters
     @app.route("/shared_calendar_view")
     def shared_calendar_view():
-        from flask import request
         group_id = request.args.get('group_id', type=int)
         calendar_id = request.args.get('calendar_id', type=int)
         # Fallbacks if not found

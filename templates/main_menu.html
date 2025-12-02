@@ -8,15 +8,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
     <script src="{{ url_for('static', filename='js/auth.js') }}" ></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/navbar_user.js') }}" defer></script>
 </head>
 <body>
-    <div class = "top-bar">
-        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
-        <div class="topbar-actions">
-            <a href="{{ url_for('notifications') }}" class="topbar-link">Notifications</a>
-            <button type="button" class ="logoutMainPage">Logout</button>
-        </div>
-    </div>
+    {% include '_navbar.html' %}
 
     <nav class="navbar">
         <div class="navbar-content">

@@ -11,6 +11,9 @@ function handleLogin(event) {
     .then(result => {
         if (result.access_token) {
             localStorage.setItem('jwt_token', result.access_token);
+            if (result.refresh_token) {
+                localStorage.setItem('refresh_token', result.refresh_token);
+            }
             if (result.user_id) {
                 localStorage.setItem('user_id', result.user_id);
             }

@@ -28,4 +28,32 @@ async function displayNavbarUser() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', displayNavbarUser);
+document.addEventListener('DOMContentLoaded', function() {
+  displayNavbarUser();
+  // Global unread notification counter
+  async function updateGlobalNotifCount() {
+    const notifCount = document.getElementById('notifCount');
+    const token = localStorage.getItem('jwt_token');
+    if (!notifCount || !token) return;
+    try {
+      const res = await fetch('/api/notifications', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      if (!res.ok) return;
+      const notifications = await res.json();
+      const unreadCount = notifications.filter(n => !n.read).length;
+      notifCount.textContent = unreadCount;
+      notifCount.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+    } catch {}
+  }
+  updateGlobalNotifCount();
+  // Logout link logic
+  const logoutLink = document.querySelector('.logout-link');
+  if (logoutLink) {
+    logoutLink.onclick = function(e) {
+      e.preventDefault();
+      localStorage.clear();
+      window.location.href = '/';
+    };
+  }
+});

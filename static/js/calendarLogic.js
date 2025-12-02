@@ -42,7 +42,7 @@ function renderPersonalCalendarGrid(calendar_id, user_id, token) {
     calendar.innerHTML = "";
     const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
     const firstDay = new Date(currentYear, currentMonth-1, 1).getDay();
-
+    //Call backend to get availabilities and events
     authFetch(`/api/calendar/personal/${user_id}/${currentYear}/${currentMonth}`, {
         method: "GET",
         headers: {"Authorization": "Bearer " + token}
@@ -159,8 +159,11 @@ function renderGroupCalendarGrid(calendar_id, group_id, token) {
         // Map events by date
         const eventsByDate = {};
         events.forEach(e => {
-            const eventDate = e.date.split('T')[0];
-            eventsByDate[eventDate] = e;
+            // Only show events that are not rejected
+            if (e.status !== 'rejected') {
+                const eventDate = e.date.split('T')[0];
+                eventsByDate[eventDate] = e;
+            }
         });
         // Render empty cells before first day
         for (let i = 0; i < firstDay; i++) {
@@ -313,23 +316,33 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
         }
         // Render images on the modal, Optional
         if (eventDetails.image_url) infoHtml += `<img src='${eventDetails.image_url}' alt='Event image' class='event-modal-image'>`;
-        // Modal action buttons (edit/delete)
-        infoHtml += `<div class='event-modal-actions'>`;
-        // Remove button for Events table events
-        if (eventDetails.event_id) {
-            infoHtml += `<button class='remove-event-btn' title='Delete Event'><span class='remove-icon'>&#128465;</span> Remove Event</button>`;
+        // Modal action buttons (edit/delete/finalize/reject) - unified style
+        infoHtml += `<div class='event-modal-action-row'>`;
+        // Remove button for Events table events (only for organizer in group calendar)
+        if (
+            eventDetails.event_id &&
+            (calendar_type !== "group" || String(localStorage.getItem("user_id")) === String(localStorage.getItem("organizer_id")))
+        ) {
+            infoHtml += `<button class='remove-event-btn event-action-btn' id='removeEventBtn'><span class='event-action-icon'>&#128465;</span> Remove Event</button>`;
         }
-        // Remove button for Availability Event
-        if (eventDetails.availability_id) {
-            infoHtml += `<button class='remove-availability-btn' title='Remove Event'><span class='remove-icon'>&#128465;</span> Remove Event</button>`;
+        // Remove button for Availability Event (personal calendar only)
+        if (eventDetails.availability_id && calendar_type !== "group") {
+            infoHtml += `<button class='remove-availability-btn event-action-btn' id='removeAvailBtn'><span class='event-action-icon'>&#128465;</span> Remove Event</button>`;
         }
-        // Show finalize button in modal if organizer and event is suggested
+        // Show finalize and reject buttons in modal if organizer and event is suggested
         if (
             eventDetails &&
             eventDetails.status === "suggested" &&
             String(localStorage.getItem("user_id")) === String(localStorage.getItem("organizer_id"))
         ) {
-            infoHtml += `<button class='finalize-btn' id='finalizeEventBtn'>Finalize</button>`;
+            infoHtml += `
+                <button class='finalize-btn event-action-btn' id='finalizeEventBtn'>
+                    <span class='event-action-icon'>&#10004;</span> Finalize
+                </button>
+                <button class='reject-btn event-action-btn' id='rejectEventBtn'>
+                    <span class='event-action-icon'>&#10006;</span> Reject
+                </button>
+            `;
         }
         infoHtml += `</div>`;
         infoHtml += `</div>`;
@@ -349,7 +362,7 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
             }
         }
         // Attach icon button actions
-        const removeBtn = document.querySelector('.remove-event-btn');
+        const removeBtn = document.getElementById('removeEventBtn');
         if (removeBtn && eventDetails.event_id) {
             removeBtn.onclick = (e) => {
                 e.stopPropagation();
@@ -363,7 +376,7 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
                 }
             };
         }
-        const removeAvailBtn = document.querySelector('.remove-availability-btn');
+        const removeAvailBtn = document.getElementById('removeAvailBtn');
         if (removeAvailBtn && eventDetails.availability_id) {
             removeAvailBtn.onclick = (e) => {
                 e.stopPropagation();
@@ -379,6 +392,24 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
             finalizeBtn.onclick = function(e) {
                 e.stopPropagation();
                 fetch(`/api/events/finalize/${eventDetails.event_id}`, {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + token }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    closeModal();
+                    renderCalendar();
+                });
+            };
+        }
+        // Reject button logic
+        const rejectBtn = document.getElementById("rejectEventBtn");
+        if (rejectBtn && eventDetails && eventDetails.event_id) {
+            rejectBtn.onclick = function(e) {
+                e.stopPropagation();
+                if (!confirm("Are you sure you want to reject this suggested event?")) return;
+                fetch(`/api/events/reject/${eventDetails.event_id}`, {
                     method: "POST",
                     headers: { "Authorization": "Bearer " + token }
                 })
@@ -431,12 +462,13 @@ function openModal(date, eventDetails, calendar_id, user_id, token, calendar_typ
         document.getElementById("availabilityInfo").textContent = "Error fetching availability.";
     });
 }
-
+//Close modal
 function closeModal() {
     document.getElementById("modal").style.display = "none";
     document.getElementById("availabilityInput").value = "";
 }
 
+// Save availability (new or update)
 function saveAvailability() {
     fetchUserContext().then(ctx => {
         const date = document.getElementById("modalDate").textContent;
@@ -564,6 +596,36 @@ window.addEventListener('DOMContentLoaded', function() {
         fetchAndRenderGroupMembers(ctx.group_id, token, ctx.user_id);
         }
     });
+    }
+    // Show end session button for organizer only
+    if (selectedCalendarType === "group") {
+        const token = localStorage.getItem('jwt_token');
+        fetchUserContext().then(function(ctx) {
+            if (ctx.group_id && String(localStorage.getItem('user_id')) === String(localStorage.getItem('organizer_id'))) {
+                const endBtn = document.getElementById('endSessionBtn');
+                if (endBtn) endBtn.style.display = 'inline-block';
+                if (endBtn) {
+                    endBtn.onclick = async function() {
+                        if (!confirm('Are you sure you want to end this group session? This will remove all members and delete the shared calendar.')) return;
+                        try {
+                            const res = await authFetch(`/api/group/${ctx.group_id}/end_session`, {
+                                method: 'POST',
+                                headers: { 'Authorization': 'Bearer ' + token }
+                            });
+                            const data = await res.json();
+                            if (res.ok) {
+                                alert('Group session ended. All members notified.');
+                                window.location.href = '/main_menu';
+                            } else {
+                                alert(data.error || 'Failed to end group session.');
+                            }
+                        } catch (err) {
+                            alert('Error ending group session.');
+                        }
+                    };
+                }
+            }
+        });
     }
     renderCalendar();
 });

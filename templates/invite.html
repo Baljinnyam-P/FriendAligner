@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/heading.css') }}">
   <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/navbar_user.js') }}" defer></script>
 
 
   <style>
@@ -19,12 +20,7 @@
 
 
 <body>
-  <!--header-->
-  <div class = "top-bar">
-        <a href="{{ url_for('main_menu') }}">
-        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
-        </a>
-    </div>
+    {% include '_navbar.html' %}
     <br><br><br><br><br><br>
 
   <!--body invite - emails-->

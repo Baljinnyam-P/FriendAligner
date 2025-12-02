@@ -213,6 +213,37 @@ def finalize_event(event_id):
     db.session.commit()
     return jsonify({'message': 'Event finalized and members notified'}), 200
 
+# Endpoint for organizer to reject a suggested event
+@events_bp.route('/reject/<int:event_id>', methods=['POST'])
+@jwt_required()
+def reject_event(event_id):
+    event = db.session.get(Event, event_id)
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+    group = db.session.get(Group, event.group_id)
+    raw_identity = get_jwt_identity()
+    try:
+        user_id = int(raw_identity)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Invalid token identity'}), 401
+    if not group or user_id != group.organizer_id:
+        return jsonify({'error': 'Only organizer can reject events'}), 403
+    if event.status != "suggested":
+        return jsonify({'error': 'Only suggested events can be rejected'}), 400
+    event.status = "rejected"  # mark as rejected
+    # Notify group members (in-app only)
+    member_ids = [m.user_id for m in group.members]
+    if group.organizer_id not in member_ids:
+        member_ids.append(group.organizer_id)
+    for uid in member_ids:
+        if uid == user_id:
+            continue  # Skip the organizer who rejected
+        notif_msg = f"Event '{event.name}' has been rejected for group '{group.group_name}' on {event.date}."
+        notification = Notification(user_id=uid, message=notif_msg, type='event_rejected')
+        db.session.add(notification)
+    db.session.commit()
+    return jsonify({'message': 'Event rejected and members notified'}), 200
+
 
 # Finder form & results (for rendering event finder results page)
 @events_bp.route("/find", methods=["GET"])

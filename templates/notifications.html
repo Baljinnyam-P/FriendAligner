@@ -8,16 +8,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/notification.css') }}">
     <script src="{{ url_for('static', filename='js/auth.js') }}" ></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/navbar_user.js') }}" defer></script>
 </head>
 <body>
-    <div class = "top-bar">
-        <a href="{{ url_for('main_menu') }}">
-        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
-        </a>
-        <button type="button" class ="logoutMainPage">Logout</button>
-    </div>
+    {% include '_navbar.html' %}
     <br><br><br><br><br><br>
-    <span id="notifCount"></span>
     <div class="notif-box">
         <h2>Notifications</h2>
         <ul id="notifList" class="notif-list"></ul>
