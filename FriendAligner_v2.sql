@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS `FriendAligner`.`Invites` (
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `FriendAligner`.`Events` (
   `event_id` INT NOT NULL AUTO_INCREMENT,
-  `calendar_id` INT NOT NULL,
+  `calendar_id` INT NULL,
   `group_id` INT NULL,
   `created_by_user_id` INT NOT NULL,
   `name` VARCHAR(120) NOT NULL,
@@ -196,10 +196,10 @@ CREATE TABLE IF NOT EXISTS `FriendAligner`.`Events` (
   `end_time` DATETIME NULL,
   `address` VARCHAR(255) NULL,
   `location_name` VARCHAR(120) NULL,
-  `image_url` VARCHAR(255) NULL,
+  `image_url` VARCHAR(1024) NULL,
   `google_maps_url` VARCHAR(255) NULL,
   `place_url` VARCHAR(255) NULL,
-  `status` VARCHAR(20) NOT NULL DEFAULT 'suggested', --suggested or finalized
+  `status` VARCHAR(20) NOT NULL DEFAULT 'suggested', 
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`event_id`),

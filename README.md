@@ -1,4 +1,10 @@
 
+Local: 
+DATABASE_URI=mysql+pymysql://root:23Baljaa1607!@localhost:3306/FriendAligner
+
+Google Cloud:
+DATABASE_URI=mysql+pymysql://Baljinnyam:123456@34.186.120.145/FriendAligner
+
 After pulling from dev branch:
 from root:
 1. python -m venv .venv

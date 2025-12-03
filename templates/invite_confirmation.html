@@ -13,11 +13,8 @@
     </style>
 </head>
 <body>
-    <div class = "top-bar">
-        <a href="{{ url_for('main_menu') }}">
-        <img src="{{ url_for('static', filename='images/FriendAlignerLogo.jpg') }}" class="img-button" alt="FriendAligner Logo">
-        </a>
-    </div>
+    {% include '_navbar.html' %}
+    
     <br><br><br><br><br><br>
     <div class="confirmation-box">
         <h2>Invites Sent!</h2>
