@@ -96,9 +96,14 @@ def remove_member(group_id):
     for m in remaining_members:
         notification = Notification(user_id=m.user_id, message=notif_msg, type='group_member_removed')
         db.session.add(notification)
+        #Remove this if you dont want to receive emails
         member_user = db.session.get(User, m.user_id)
         if member_user and member_user.email:
             send_email(member_user.email, "Group Member Removed", notif_msg)
+    # Notify the removed member
+    notif_msg_removed = f"You have been removed from the group '{group.group_name}'."
+    notification_removed = Notification(user_id=remove_user_id, message=notif_msg_removed, type='group_member_removed')
+    db.session.add(notification_removed)
     db.session.commit()
     return jsonify({'message': 'Member removed'}), 200
 

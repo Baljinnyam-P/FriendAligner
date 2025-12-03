@@ -19,12 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
     groupSelect.innerHTML = '';
     if (groups.length === 0) {
       groupSelect.innerHTML = '<option value="new">Create New Group</option>';
+        // Show group name input if only 'Create New Group' is present
+        newGroupNameDiv.style.display = '';
     } else {
       groupSelect.innerHTML = '<option value="">Select a group</option>';
       groups.forEach(g => {
         groupSelect.innerHTML += `<option value="${g.group_id}">${g.group_name}</option>`;
       });
       groupSelect.innerHTML += '<option value="new">Create New Group</option>';
+        newGroupNameDiv.style.display = 'none';
     }
   })
   .catch(() => {
