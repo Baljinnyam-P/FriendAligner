@@ -1,6 +1,6 @@
 
 Local: 
-DATABASE_URI=mysql+pymysql://root:23Baljaa1607!@localhost:3306/FriendAligner
+DATABASE_URI=mysql+pymysql://root:23Baljaa1607!@127.0.0.1:3306/FriendAligner
 
 Google Cloud:
 DATABASE_URI=mysql+pymysql://Baljinnyam:123456@34.186.120.145/FriendAligner
@@ -23,17 +23,12 @@ pip install -r requirements.txt
 
 4. Create .env at root:
 SECRET_KEY=your-secret-key
-
 JWT_SECRET_KEY=your-jwt-secret
 DATABASE_URI=mysql+pymysql://<DB_USER>:<DB_PASSWORD>@127.0.0.1:3306/FriendAligner
 GOOGLE_PLACES_API_KEY=your-google-places-api-key
-
 SMTP_SERVER=smtp.gmail.com
-
 SMTP_PORT=587
-
 SMTP_USER=your_email@gmail.com
-
 SMTP_PASSWORD=your_app_password
 
 
