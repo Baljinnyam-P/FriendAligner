@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import db
-from app.models import Group, GroupMember, User, Calendar, Availability
+from app.models import Group, GroupMember, User, Calendar, Availability, Event
 from app.models.notification import Notification
 from app.utils.send_email import send_email
 
@@ -123,7 +123,9 @@ def end_group_session(group_id):
     # Get group calendar
     group_calendar = Calendar.query.filter_by(group_id=group_id, type='group').first()
     # Remove all availabilities for group calendar
+    # Remove all events and availabilities for group calendar
     if group_calendar:
+        Event.query.filter_by(calendar_id=group_calendar.calendar_id).delete()
         Availability.query.filter_by(calendar_id=group_calendar.calendar_id).delete()
         db.session.delete(group_calendar)
     # Remove all group members
